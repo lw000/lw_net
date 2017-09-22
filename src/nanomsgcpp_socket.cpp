@@ -3,7 +3,7 @@
 #include "common_type.h"
 #include "socket_core.h"
 
-#include <nanomsg/nn.h>
+#include <nn.h>
 
 #include <log4z.h>
 
