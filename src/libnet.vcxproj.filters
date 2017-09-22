@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="http_server.cpp" />
+    <ClCompile Include="socket_server.cpp" />
+    <ClCompile Include="socket_client.cpp" />
+    <ClCompile Include="socket_timer.cpp" />
+    <ClCompile Include="socket_session.cpp" />
+    <ClCompile Include="object.cpp" />
+    <ClCompile Include="socket_processor.cpp" />
+    <ClCompile Include="net.cpp" />
+    <ClCompile Include="session_manager.cpp" />
+    <ClCompile Include="socket_listener.cpp" />
+    <ClCompile Include="cache_queue.cpp" />
+    <ClCompile Include="message_queue.cpp" />
+    <ClCompile Include="nanomsg_socket.cpp" />
+    <ClCompile Include="NetHead.cpp" />
+    <ClCompile Include="NetPackage.cpp" />
+    <ClCompile Include="socket_core.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="http_server.h" />
+    <ClInclude Include="socket_server.h" />
+    <ClInclude Include="socket_client.h" />
+    <ClInclude Include="socket_timer.h" />
+    <ClInclude Include="socket_session.h" />
+    <ClInclude Include="net.h" />
+    <ClInclude Include="object.h" />
+    <ClInclude Include="socket_hanlder.h" />
+    <ClInclude Include="socket_processor.h" />
+    <ClInclude Include="session_manager.h" />
+    <ClInclude Include="socket_listener.h" />
+    <ClInclude Include="cache_queue.h" />
+    <ClInclude Include="message_queue.h" />
+    <ClInclude Include="nanomsg_socket.h" />
+    <ClInclude Include="NetHead.h" />
+    <ClInclude Include="NetPackage.h" />
+    <ClInclude Include="socket_core.h" />
+  </ItemGroup>
+</Project>
