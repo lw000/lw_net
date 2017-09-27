@@ -22,9 +22,6 @@
     <ClCompile Include="./src/message_queue.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="./src/nanomsg_socket.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="./src/net.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -55,6 +52,7 @@
     <ClCompile Include="./src/socket_timer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="./src/nanomsgcpp_socket.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="./include/cache_queue.h">
@@ -64,9 +62,6 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="./include/message_queue.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="./include/nanomsgcpp_socket.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="./include/net.h">
@@ -102,5 +97,6 @@
     <ClInclude Include="./include/socket_timer.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="./include/nanomsg_socket.h" />
   </ItemGroup>
 </Project>

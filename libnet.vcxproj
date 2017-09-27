@@ -110,7 +110,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\include;..\lw_core\include;..\lw_common\include;..\lw_common\json;..\..\cpp\libevent;..\..\cpp\libevent\include;..\..\cpp\libevent\build\vs2013\include;..\..\cpp\libevent\WIN32-Code;..\..\cpp\nanomsg\src;..\..\cpp\log4z</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\include;..\lw_core\include;..\lw_common\include;..\lw_common\json;..\..\cross-common\libevent;..\..\cross-common\libevent\include;..\..\cross-common\libevent\build\vs2013\include;..\..\cross-common\libevent\libevent\WIN32-Code;..\..\cross-common\nanomsg\src</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -140,7 +140,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libutils;..\core;..\json;..\common;..\..\libevent\;..\..\libevent\include;..\..\libevent\build\vs2013\include;..\..\libevent\WIN32-Code;..\..\nanomsg\src;..\..\log4z</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\include;..\lw_core\include;..\lw_common\include;..\lw_common\json;..\..\cpp\libevent;..\..\cpp\libevent\include;..\..\cpp\libevent\build\vs2013\include;..\..\cpp\libevent\WIN32-Code;..\..\cpp\nanomsg\src;..\..\cpp\log4z</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
