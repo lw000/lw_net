@@ -52,7 +52,9 @@
     <ClCompile Include="./src/socket_timer.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="./src/nanomsgcpp_socket.cpp" />
+    <ClCompile Include="./src/nanomsgcpp_socket.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="./include/cache_queue.h">
@@ -97,6 +99,8 @@
     <ClInclude Include="./include/socket_timer.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="./include/nanomsg_socket.h" />
+    <ClInclude Include="include\nanomsgcpp_socket.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
