@@ -6,7 +6,7 @@
 
 class SocketSession;
 
-class SessionManager final
+class SessionManager
 {
 private:
 	std::mutex _m;

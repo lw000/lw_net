@@ -57,6 +57,17 @@ SocketSession::~SocketSession() {
 }
 
 int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev) {
+
+	if (this->_processor == nullptr) {
+		printf("this->_processor is nullptr \n");
+		return -1;
+	}
+
+	if (this->_c == SESSION_TYPE::NONE) {
+		printf("this->_c is SESSION_TYPE::NONE \n");
+		return -1;
+	}
+
 	if (this->_c != c)
 	{
 		this->_c = c;
@@ -83,17 +94,10 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		saddr.sin_addr.s_addr = inet_addr(this->_host.c_str());
 		saddr.sin_port = htons(this->_port);
 
-		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE/* | BEV_OPT_THREADSAFE*/);
 		int con = bufferevent_socket_connect(this->_bev, (struct sockaddr *)&saddr, sizeof(saddr));
 		if (con >= 0) {
 			bufferevent_setcb(this->_bev, CoreSocket::__read_cb, NULL, CoreSocket::__event_cb, this);
-			
-// 			struct timeval timeout_read;
-// 			evutil_timerclear(&timeout_read);
-// 			timeout_read.tv_sec = 1;
-// 			timeout_read.tv_usec = 0;
-// 			bufferevent_set_timeouts(this->_bev, &timeout_read, NULL);
-
 			bufferevent_enable(this->_bev, ev);
 		}
 		else {

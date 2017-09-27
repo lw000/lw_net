@@ -68,7 +68,7 @@ private:
 
 };
 
-class SimpleMessageQueue final
+class SimpleMessageQueue
 {
 public:
 	SimpleMessageQueue();

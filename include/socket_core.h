@@ -22,7 +22,7 @@ struct LW_NET_MESSAGE
 	lw_int32 size;
 };
 
-class SocketCore final
+class SocketCore
 {
 public:
 	SocketCore();

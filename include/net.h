@@ -9,7 +9,7 @@ extern "C"
 	void lw_socket_clean();
 }
 
-class SocketInit final
+class SocketInit
 {
 public:
 	SocketInit();

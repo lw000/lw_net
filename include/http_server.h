@@ -14,7 +14,7 @@ class HttpServer;
 
 void lw_http_send_reply(struct evhttp_request * req, const char* what);
 
-class HttpServer final
+class HttpServer
 {
 	friend class CoreHttp;
 
