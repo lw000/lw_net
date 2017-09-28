@@ -36,7 +36,7 @@ public:
 
 protected:
 	virtual int onStart() override;
-	virtual int run() override;
+	virtual int onRun() override;
 	virtual int onEnd() override;
 
 	void __doStore(const char * path, lw_int32 cmd, std::function<void(struct evhttp_request *)> cb);

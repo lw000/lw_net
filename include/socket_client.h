@@ -18,7 +18,7 @@ public:
 	virtual ~SocketClient();
 
 public:
-	bool create(SocketProcessor* processor, AbstractSocketClientHandler* handler);
+	bool create(/*SocketProcessor* processor, */AbstractSocketClientHandler* handler);
 	void destroy();
 
 public:
@@ -40,7 +40,7 @@ public:
 
 protected:
 	virtual int onStart() override;
-	virtual int run() override;
+	virtual int onRun() override;
 	virtual int onEnd() override;
 
 private:

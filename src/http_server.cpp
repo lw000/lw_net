@@ -269,7 +269,7 @@ int HttpServer::onStart() {
 	return 0;
 }
 
-int HttpServer::run() {
+int HttpServer::onRun() {
 	int ret = event_base_dispatch(_base);
 
 	evhttp_free(this->_htpServ);

@@ -32,6 +32,7 @@ bool SocketProcessor::create(bool enableServer, SocketCore* core)
 	if (this->_base == nullptr)
 	{
 #ifdef WIN32
+		if (enableServer) {
 			struct event_config *cfg = event_config_new();
 			event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
 			if (cfg)
@@ -39,6 +40,9 @@ bool SocketProcessor::create(bool enableServer, SocketCore* core)
 				this->_base = event_base_new_with_config(cfg);
 				event_config_free(cfg);
 			}
+		} else {
+			this->_base = event_base_new();
+		}		
 #else
 			this->_base = event_base_new();
 #endif	

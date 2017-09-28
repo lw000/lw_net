@@ -30,7 +30,7 @@ public:
 	void destroy();
 
 public:
-	lw_int32 run(u_short port, std::function<void(lw_int32 what)> func);
+	lw_int32 listen(u_short port, std::function<void(lw_int32 what)> func);
 
 public:
 	int loopbreak();
@@ -51,7 +51,7 @@ private:
 
 protected:
 	virtual int onStart() override;
-	virtual int run() override;
+	virtual int onRun() override;
 	virtual int onEnd() override;
 
 private:

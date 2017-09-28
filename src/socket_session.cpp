@@ -63,11 +63,6 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		return -1;
 	}
 
-	if (this->_c == SESSION_TYPE::NONE) {
-		printf("this->_c is SESSION_TYPE::NONE \n");
-		return -1;
-	}
-
 	if (this->_c != c)
 	{
 		this->_c = c;

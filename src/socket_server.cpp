@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <signal.h>
-//#include <thread>
 #include <vector>
 #include <algorithm>
 
@@ -124,7 +123,7 @@ void SocketServer::listener_error_cb(struct evconnlistener * listener)
 	_processor->loopexit();
 }
 
-lw_int32 SocketServer::run(u_short port, std::function<void(lw_int32 what)> func)
+lw_int32 SocketServer::listen(u_short port, std::function<void(lw_int32 what)> func)
 {
  	if (nullptr == func) return -1;
 
@@ -156,15 +155,10 @@ int SocketServer::onStart() {
 	return 0;
 }
 
-int SocketServer::run() {
-
-	//	struct evconnlistener *listener = __createConnListener(this->_port);
-
+int SocketServer::onRun() {
 	bool ret = _listener->create(_processor, this->_port);
 	if (ret)
 	{
-		// 		evconnlistener_set_error_cb(listener, __listener_error_cb);
-
 		_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
 			SocketSession* pSession = new SocketSession(this->_handler);
 			int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
@@ -208,11 +202,11 @@ int SocketServer::run() {
 			});
 		}
 
-		AbstractSocketThread* t = (AbstractSocketThread*)(_handler);
-		t->onStart();
+		//AbstractSocketThread* t = (AbstractSocketThread*)(_handler);
+		//t->onStart();
 		int r = _processor->dispatch();
-		printf("r = %d", r);
-		t->onEnd();
+		//printf("r = %d\n", r);
+		//t->onEnd();
 
 		// 		if (listener != nullptr)
 		// 		{

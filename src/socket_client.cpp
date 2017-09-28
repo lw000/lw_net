@@ -16,19 +16,21 @@ using namespace lwstar;
 SocketClient::SocketClient() : _processor(nullptr), _session(nullptr)
 {
 	_core = new SocketCore;
+
+	this->_processor = new SocketProcessor;
 }
 
 SocketClient::~SocketClient()
 {
 	SAFE_DELETE(this->_session);
 	SAFE_DELETE(this->_core);
+	SAFE_DELETE(this->_processor);
 }
 
-bool SocketClient::create(SocketProcessor* processor, AbstractSocketClientHandler* handler)
+bool SocketClient::create(/*SocketProcessor* processor, */AbstractSocketClientHandler* handler)
 {													  
-	this->_processor = processor;
+	//this->_processor = processor;
 	this->_handler = handler;
-
 	bool r = this->_processor->create(false, _core);
 	if (r)
 	{
@@ -99,16 +101,16 @@ int SocketClient::onStart() {
 	return 0;
 }
 
-int SocketClient::run() {
-	int r = this->_session->create(SESSION_TYPE::Client, _processor, -1, EV_READ | EV_PERSIST);
+int SocketClient::onRun() {
+	int r = this->_session->create(SESSION_TYPE::Client, this->_processor, -1, EV_READ | EV_PERSIST);
 
 	if (r == 0)
 	{
-		(AbstractSocketThread*)(this->_handler)->onStart();
+		//(AbstractSocketThread*)(this->_handler)->onStart();
 
 		this->_processor->dispatch();
 
-		(AbstractSocketThread*)(this->_handler)->onEnd();
+		//(AbstractSocketThread*)(this->_handler)->onEnd();
 	}
 
 	this->destroy();
