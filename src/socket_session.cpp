@@ -16,7 +16,7 @@
 
 #include "log4z.h"
 #include <memory>
-#include <thread>
+//#include <thread>
 
 #define RECV_BUFFER_SIZE	16*2
 

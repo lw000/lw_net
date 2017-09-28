@@ -39,10 +39,12 @@ namespace lwstar {
 
 		char* p = buffer;
 		int i = 0;
-		for (auto v : _cq) {
-			if (i++ >= size) { break; }
-			*p++ = v;
-		}
+		/*for (auto v : _cq) {*/
+		std::for_each(_cq.begin(), _cq.end(), [&p, &i, &size](char c) {
+			if (i++ < size) {
+				*p++ = c;
+			}
+		});
 	}
 
 	std::vector<lw_char8>* CacheQueue::front_copyto(std::vector<lw_char8>& dest, int size) {

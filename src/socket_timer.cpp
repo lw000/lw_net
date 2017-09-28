@@ -13,7 +13,7 @@
 	#include <arpa/inet.h>
 #endif // WIN32
 
-#include <thread>
+//#include <thread>
 
 #include "socket_processor.h"
 
@@ -383,7 +383,6 @@ void TimerLinux::kill(int tid)
 			{
 				int r = 0;
 				r = event_del(ptimer->ev);
-				printf("r = %d", r);
 				delete timer;
 
 				iter = _timers.erase(iter);

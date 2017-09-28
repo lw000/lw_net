@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <signal.h>
-#include <thread>
+//#include <thread>
 #include <vector>
 #include <algorithm>
 
@@ -131,8 +131,10 @@ lw_int32 SocketServer::run(u_short port, std::function<void(lw_int32 what)> func
 	this->_port = port;
 	this->_onFunc = func;
 
-	std::thread t(std::bind(&SocketServer::__run, this));
-	t.detach();
+// 	std::thread t(std::bind(&SocketServer::__run, this));
+// 	t.detach();
+
+	this->start();
 
 	return 0;
 }
@@ -150,14 +152,18 @@ struct evconnlistener * SocketServer::__createConnListener(int port)
 	return listener;
 }
 
-void SocketServer::__run()
-{
-//	struct evconnlistener *listener = __createConnListener(this->_port);
+int SocketServer::onStart() {
+	return 0;
+}
+
+int SocketServer::run() {
+
+	//	struct evconnlistener *listener = __createConnListener(this->_port);
 
 	bool ret = _listener->create(_processor, this->_port);
 	if (ret)
 	{
-// 		evconnlistener_set_error_cb(listener, __listener_error_cb);
+		// 		evconnlistener_set_error_cb(listener, __listener_error_cb);
 
 		_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
 			SocketSession* pSession = new SocketSession(this->_handler);
@@ -184,7 +190,7 @@ void SocketServer::__run()
 
 		_listener->set_listener_errorcb([this](void * userdata, int er) {
 			int err = EVUTIL_SOCKET_ERROR();
-//			printf("got an error %d (%s) on the listener. shutting down.\n", err, evutil_socket_error_to_string(err));
+			//			printf("got an error %d (%s) on the listener. shutting down.\n", err, evutil_socket_error_to_string(err));
 
 			this->_processor->loopexit();
 		});
@@ -208,17 +214,21 @@ void SocketServer::__run()
 		printf("r = %d", r);
 		t->onEnd();
 
-// 		if (listener != nullptr)
-// 		{
-// 			evconnlistener_free(listener);
-// 		}
+		// 		if (listener != nullptr)
+		// 		{
+		// 			evconnlistener_free(listener);
+		// 		}
 
 		this->_listener->destroy();
 	}	
 
 	this->destroy();
 
-	return;
+	return 0;
+}
+
+int SocketServer::onEnd() {
+	return 0;
 }
 
 int SocketServer::loopbreak()

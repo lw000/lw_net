@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include "common_type.h"
+#include "Threadable.h"
 
 struct event_base;
 struct evhttp;
@@ -14,7 +15,7 @@ class HttpServer;
 
 void lw_http_send_reply(struct evhttp_request * req, const char* what);
 
-class HttpServer
+class HttpServer : public Threadable
 {
 	friend class CoreHttp;
 
@@ -28,13 +29,16 @@ public:
 
 public:
 	lw_int32 create(const char* addr, lw_uint32 port);
-	void run();
+	void listen();
 	void gen(std::function<void (struct evhttp_request *)> cb);
 	void get(const char * path, std::function<void(struct evhttp_request *)> cb);
 	void post(const char * path, std::function<void(struct evhttp_request *)> cb);
 
-private:
-	void __run();
+protected:
+	virtual int onStart() override;
+	virtual int run() override;
+	virtual int onEnd() override;
+
 	void __doStore(const char * path, lw_int32 cmd, std::function<void(struct evhttp_request *)> cb);
 
 private:

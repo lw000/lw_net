@@ -5,7 +5,8 @@
 #include "common_marco.h"
 #include "cache_queue.h"
 
-#include <mutex>
+//#include <mutex>
+#include "lock.h"
 
 #include <functional>
 
@@ -32,13 +33,14 @@ public:
 	lw_int32 send(lw_int32 cmd, void* object, lw_int32 objectSize, std::function<lw_int32(LW_NET_MESSAGE* p)> func);
 	lw_int32 parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CALLFUNC func, lw_void* userdata);
 	
-public:
-	SocketCore(const SocketCore&) = delete;
-	SocketCore& operator=(const SocketCore&) = delete;
+private:
+	SocketCore(const SocketCore&);
+	SocketCore& operator=(const SocketCore&);
 
 private:
 	CacheQueue	_cq;
-	std::mutex	_m;
+	//std::mutex	_m;
+	lw_fast_lock _m;
 };
 
 #endif // !__socket_core_h__

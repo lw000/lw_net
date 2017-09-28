@@ -1,7 +1,6 @@
 ﻿#include "socket_client.h"
 
 #include <stdio.h>
-#include <thread>
 #include <assert.h>
 
 #include "event2/event.h"
@@ -73,8 +72,10 @@ int SocketClient::run(const std::string& addr, int port)
 	this->_session->setHost(addr);
 	this->_session->setPort(port);
 
-	std::thread t(std::bind(&SocketClient::__run, this));
-	t.detach();
+// 	std::thread t(std::bind(&SocketClient::__run, this));
+// 	t.detach();
+
+	this->start();
 
 	return 0;
 }
@@ -94,8 +95,11 @@ SocketSession* SocketClient::getSession()
 	return this->_session;
 }
 
-void SocketClient::__run()
-{
+int SocketClient::onStart() {
+	return 0;
+}
+
+int SocketClient::run() {
 	int r = this->_session->create(SESSION_TYPE::Client, _processor, -1, EV_READ | EV_PERSIST);
 
 	if (r == 0)
@@ -109,5 +113,9 @@ void SocketClient::__run()
 
 	this->destroy();
 
-	return;
+	return 0;
+}
+
+int SocketClient::onEnd() {
+	return 0;
 }

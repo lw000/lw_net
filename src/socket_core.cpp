@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <string.h>
 #include <memory>
-#include <thread>
 
 #include "NetHead.h"
 #include "NetPackage.h"
@@ -46,7 +45,8 @@ lw_int32 SocketCore::parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CA
 		{
 			lw_int32 dqs = 0;
 			{
-				std::lock_guard < std::mutex > lock(_m);
+				//std::lock_guard < std::mutex > lock(_m);
+				lw_auto_lock l(&_m);
 				_cq.push(const_cast<lw_char8*>(buf), size);
 				dqs = (lw_int32)_cq.size();
 			}
@@ -56,12 +56,13 @@ lw_int32 SocketCore::parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CA
 				{
 					std::unique_ptr<lw_char8[]> package;
 					{
-						std::lock_guard < std::mutex > lock(_m);
+						//std::lock_guard < std::mutex > lock(_m);
+						lw_auto_lock l(&_m);
 
 						NetHead *hd = (NetHead*)_cq.front();
 						if (dqs < hd->size) {
 							lw_char8 buf[256];
-							sprintf(buf, "thread::id:%d, not a complete data packet [thread::id: %d, dqs: %d, head size: %d]", std::this_thread::get_id(), dqs, hd->size);
+							sprintf(buf, "not a complete data packet [dqs: %d, head size: %d]", dqs, hd->size);
 							LOGD(buf);
 
 							break;
@@ -93,7 +94,7 @@ lw_int32 SocketCore::parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CA
 			}
 			else {
 				lw_char8 buf[256];
-				sprintf(buf, "not a complete data packet [thread::id: %d, dqs: %d]", std::this_thread::get_id(), dqs);
+				sprintf(buf, "not a complete data packet [dqs: %d]", dqs);
 				LOGD(buf);
 			}
 		}

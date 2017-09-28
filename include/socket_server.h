@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <event2/util.h>
 #include "object.h"
-
+#include "Threadable.h"
 #include "socket_hanlder.h"
 
 #include <functional>
@@ -19,7 +19,7 @@ class SocketListener;
 
 struct evconnlistener;
 
-class SocketServer : public Object
+class SocketServer : public Object, public Threadable
 {
 public:
 	SocketServer();
@@ -49,8 +49,10 @@ public:
 private:
 	struct evconnlistener * __createConnListener(int port);
 
-private:
-	void __run();
+protected:
+	virtual int onStart() override;
+	virtual int run() override;
+	virtual int onEnd() override;
 
 private:
 	SocketProcessor* _processor;

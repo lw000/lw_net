@@ -5,11 +5,13 @@
 #include "object.h"
 #include "socket_hanlder.h"
 
+#include "Threadable.h"
+
 class SocketClient;
 class SocketProcessor;
 class SocketCore;
 
-class SocketClient : public Object
+class SocketClient : public Object, public Threadable
 {
 public:
 	SocketClient();
@@ -36,8 +38,10 @@ public:
 public:
 	virtual std::string debug() override;
 
-private:
-	void __run();
+protected:
+	virtual int onStart() override;
+	virtual int run() override;
+	virtual int onEnd() override;
 
 private:
 	SocketProcessor* _processor;

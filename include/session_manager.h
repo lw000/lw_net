@@ -2,14 +2,16 @@
 #define __SessionManager_h__
 
 #include <list>
-#include <mutex>
+//#include <mutex>
+#include "lock.h"
 
 class SocketSession;
 
 class SessionManager
 {
 private:
-	std::mutex _m;
+	//std::mutex _m;
+	lw_fast_lock _m;
 
 private:
 	std::list<SocketSession*> _live;

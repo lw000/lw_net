@@ -3,9 +3,11 @@
 
 #include <queue>
 #include <unordered_map>
-#include <mutex>
-#include <atomic>
+//#include <mutex>
+//#include <atomic>
+
 #include <time.h>
+#include "lock.h"
 
 class Msgdata {
 	long   mtype;
@@ -45,7 +47,8 @@ public:
 
 private:
 	std::queue<Msgdata> _msg;
-	std::atomic<long long> _total;
+	//std::atomic<long long> _total;
+	long long _total;
 };
 
 class SimpleMessageBroker
@@ -86,9 +89,11 @@ public:
 	long long size();
 
 private:
-	std::mutex _m;
+	///std::mutex _m;
+	lw_fast_lock _m;
 	std::unordered_map<unsigned long, std::queue<Msgdata>> _msg_queue;
-	std::atomic<long long> _msg_total;
+//	std::atomic<long long> _msg_total;
+	long long _msg_total;
 };
 
 #endif	// !__SimpleMessageQueue_h__

@@ -33,8 +33,10 @@ public:
 private:
 	virtual void onRecv(lw_int32 cmd, char* buf, lw_int32 bufsize) = 0;
 
-private:
+protected:
 	int _fd;
+
+private:
 	SocketCore* _core;
 };
 

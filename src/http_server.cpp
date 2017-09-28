@@ -4,7 +4,6 @@
 #include <signal.h>
 #include <string>
 #include <vector>
-#include <thread>
 #include <unordered_map>
 
 #ifdef WIN32
@@ -221,10 +220,11 @@ lw_int32 HttpServer::create(const char* addr, lw_uint32 port)
 	return 0;
 }
 
-void HttpServer::run()
+void HttpServer::listen()
 {
-	std::thread t(std::bind(&HttpServer::__run, this));
-	t.detach();
+// 	std::thread t(std::bind(&HttpServer::__run, this));
+// 	t.detach();
+	this->start();
 }
 
 // 设置回调 
@@ -265,8 +265,11 @@ void HttpServer::__doStore(const char * path, lw_int32 cmd, std::function<void(s
 	}
 }
 
-void HttpServer::__run()
-{
+int HttpServer::onStart() {
+	return 0;
+}
+
+int HttpServer::run() {
 	int ret = event_base_dispatch(_base);
 
 	evhttp_free(this->_htpServ);
@@ -275,4 +278,9 @@ void HttpServer::__run()
 
 	this->_htpServ = NULL;
 	this->_base = NULL;
+	return 0;
+}
+
+int HttpServer::onEnd() {
+	return 0;
 }

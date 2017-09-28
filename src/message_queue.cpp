@@ -175,7 +175,8 @@ long long SimpleMessageQueue::size() {
 
 void SimpleMessageQueue::push(const Msgdata& msg, const char* channel) {
 	{
-		std::lock_guard<std::mutex> l(_m);
+		//std::lock_guard < std::mutex > lock(_m);
+		lw_auto_lock l(&_m);
 		if (channel == NULL) {
 			_msg_queue.at(0).push(msg);
 		}
@@ -192,7 +193,8 @@ Msgdata SimpleMessageQueue::pop(const char* channel) {
 		if (!_msg_queue.at(0).empty()) {
 			_msg_total -= 1;
 			{
-				std::lock_guard<std::mutex> l(_m);
+				//std::lock_guard < std::mutex > lock(_m);
+				lw_auto_lock l(&_m);
 				Msgdata msg = _msg_queue.at(0).front();
 				_msg_queue.at(0).pop();
 				return msg;
@@ -204,7 +206,8 @@ Msgdata SimpleMessageQueue::pop(const char* channel) {
 		if (!_msg_queue.at(hashcode).empty()) {
 			_msg_total -= 1;
 			{
-				std::lock_guard<std::mutex> l(_m);
+				//std::lock_guard < std::mutex > lock(_m);
+				lw_auto_lock l(&_m);
 				Msgdata msg = _msg_queue.at(hashcode).front();
 				_msg_queue.at(hashcode).pop();
 				return msg;
