@@ -11,11 +11,9 @@
 
 #include "socket_hanlder.h"
 
-class SocketCore;
+class NetCore;
 class SocketSession;
 class SocketProcessor;
-
-typedef std::function<bool(char* buf, lw_int32 bufsize)> SocketCallback;
 
 enum SESSION_TYPE
 {
@@ -35,7 +33,7 @@ public:
 	SocketEventHandler errorHandler;
 
 public:
-	SocketSession(AbstractSocketSessionHanlder* handler, SocketCore * core);
+	SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core);
 	virtual ~SocketSession();
 
 public:
@@ -57,7 +55,7 @@ public:
 
 public:
 	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize);
-	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, lw_int32 recvcmd, SocketCallback cb);
+	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, lw_int32 recvcmd, SocketRecvCallback cb);
 
 private:
 	void __onRead();
@@ -69,7 +67,7 @@ private:
 	void __reset();
 
 private:
-	std::unordered_map<lw_int32, SocketCallback> _cmd_event_map;
+	std::unordered_map<lw_int32, SocketRecvCallback> _cmd_event_map;
 
 private:
 	SESSION_TYPE _c;	//session¿‡–Õ
@@ -80,7 +78,7 @@ private:
 	bool _connected;
 
 private:
-	SocketCore* _core;
+	NetCore* _core;
 	SocketProcessor* _processor;
 	struct bufferevent* _bev;
 	AbstractSocketSessionHanlder * _handler;

@@ -13,9 +13,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="./src/cache_queue.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="./src/http_server.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -32,9 +29,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="./src/socket_client.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="./src/socket_core.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="./src/socket_listener.cpp">
@@ -57,9 +51,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="./include/cache_queue.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="./include/http_server.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -76,9 +67,6 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="./include/socket_client.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="./include/socket_core.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="./include/socket_hanlder.h">

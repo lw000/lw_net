@@ -5,9 +5,11 @@
 
 #include "event2/event.h"
 
-#include "socket_core.h"
+#include "net_core.h"
 #include "socket_processor.h"
 #include "socket_session.h"
+
+#include "common_marco.h"
 
 #include "log4z.h"
 using namespace zsummer::log4z;
@@ -18,7 +20,7 @@ using namespace lwstar;
 
 SocketClient::SocketClient() : _processor(nullptr), _session(nullptr)
 {
-	_core = new SocketCore;
+	_core = new NetCore;
 
 	this->_processor = new SocketProcessor;
 }

@@ -1,7 +1,7 @@
 #include "nanomsgcpp_socket.h"
 
 #include "common_type.h"
-#include "socket_core.h"
+#include "net_core.h"
 
 #include <nn.h>
 
@@ -18,7 +18,7 @@ public:
 
 NanomsgcppSocket::NanomsgcppSocket() {
 	this->_fd = -1;
-	_core = new SocketCore;
+	_core = new NetCore;
 }
 
 NanomsgcppSocket::~NanomsgcppSocket() {

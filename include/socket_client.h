@@ -9,7 +9,7 @@
 
 class SocketClient;
 class SocketProcessor;
-class SocketCore;
+class NetCore;
 
 class SocketClient : public Object, public Threadable
 {
@@ -52,7 +52,7 @@ protected:
 private:
 	SocketProcessor* _processor;
 	SocketSession* _session;
-	SocketCore* _core;
+	NetCore* _core;
 	AbstractSocketClientHandler* _handler;
 };
 

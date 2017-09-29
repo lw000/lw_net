@@ -18,10 +18,10 @@
 #include <sys/socket.h>
 #endif // _WIN32
 
+#include "net_core.h"
 #include "common_marco.h"
 #include "socket_session.h"
 #include "socket_timer.h"
-#include "socket_core.h"
 #include "socket_processor.h"
 #include "socket_listener.h"
 
@@ -43,7 +43,7 @@ static void __listener_error_cb(struct evconnlistener * listener, void * userdat
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
 	this->_processor = new SocketProcessor;
-	this->_core = new SocketCore;
+	this->_core = new NetCore;
 	this->_timer = new Timer;
 	this->_listener = new SocketListener;
 }

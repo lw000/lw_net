@@ -14,7 +14,7 @@
 class Timer;
 class SocketSession;
 class SocketProcessor;
-class SocketCore;
+class NetCore;
 class SocketListener;
 
 struct evconnlistener;
@@ -56,7 +56,7 @@ protected:
 
 private:
 	SocketProcessor* _processor;
-	SocketCore* _core;
+	NetCore* _core;
 	SocketListener* _listener;
 
 	lw_int32 _port;

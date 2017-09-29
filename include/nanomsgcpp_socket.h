@@ -5,7 +5,7 @@
 
 #include "common_type.h"
 
-class SocketCore;
+class NetCore;
 
 class NanomsgcppSocket
 {
@@ -37,7 +37,7 @@ protected:
 	int _fd;
 
 private:
-	SocketCore* _core;
+	NetCore* _core;
 };
 
 #endif	//__nanomsgcpp_socket_h__

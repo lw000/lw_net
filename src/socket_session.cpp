@@ -11,7 +11,7 @@
 #include <event2/buffer.h>
 #include <event2/util.h>
 
-#include "socket_core.h"
+#include "net_core.h"
 #include "socket_processor.h"
 
 #include "log4z.h"
@@ -43,7 +43,7 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, SocketCore * core) {
+SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core) {
 	this->_core = core;
 	this->_handler = handler;
 	this->_connected = false;
@@ -141,7 +141,7 @@ bool SocketSession::connected() {
 std::string SocketSession::debug() {
 	char buf[512];
 	evutil_socket_t fd = bufferevent_getfd(this->_bev);
-	sprintf(buf, "(fd:%d ip:%s, port:%d, c:%d, connected:%d)", fd, this->_host.c_str(), this->_port, this->_c, this->_connected);
+	sprintf(buf, "fd:%d, ip:%s, port:%d, c:%d, connected:%d", fd, this->_host.c_str(), this->_port, this->_c, this->_connected);
 	return std::string(buf);
 }
 
@@ -153,14 +153,18 @@ lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize
 		});
 		return c;
 	}
+	else
+	{
+		LOGD("network is not connected.");
+	}
 	return -1;
 }
 
-lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize, lw_int32 recvcmd, SocketCallback cb) {
+lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize, lw_int32 recvcmd, SocketRecvCallback cb) {
 	if (this->_connected) {
-		std::unordered_map<lw_int32, SocketCallback>::iterator iter = this->_cmd_event_map.find(recvcmd);
+		std::unordered_map<lw_int32, SocketRecvCallback>::iterator iter = this->_cmd_event_map.find(recvcmd);
 		if (iter == _cmd_event_map.end()) {
-			this->_cmd_event_map.insert(std::pair<lw_int32, SocketCallback>(recvcmd, cb));
+			this->_cmd_event_map.insert(std::pair<lw_int32, SocketRecvCallback>(recvcmd, cb));
 		}
 		else {
 			iter->second = cb;
@@ -170,6 +174,10 @@ lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize
 			return c1;
 		});
 		return c;
+	}
+	else
+	{
+		LOGD("network is not connected.");
 	}
 	return -1;
 }
@@ -188,7 +196,7 @@ void SocketSession::__onRead() {
 	while (input_len > 0) {
 		size_t recv_len = bufferevent_read(this->_bev, recv_buf, RECV_BUFFER_SIZE);
 		if (recv_len > 0) {
-			if (this->_processor->getSocketCore()->parse(recv_buf, recv_len, CoreSocket::__on_socket_data_parse_cb, this) == 0) {
+			if (this->_core->parse(recv_buf, recv_len, CoreSocket::__on_socket_data_parse_cb, this) == 0) {
 
 			}
 		}
@@ -209,9 +217,9 @@ void SocketSession::__onRead() {
 			}
 		}
 		else {
-//			lw_char8 buf[256];
-//			sprintf(buf, "SocketSession::__onRead [thread::id: %d, read_len: %d]", GetCurrentThreadId(), recv_len);
-//			LOGD(buf);
+			lw_char8 buf[256];
+			sprintf(buf, "SocketSession::__onRead. read_len: %d", recv_len);
+			LOGD(buf);
 		}
 		input_len -= recv_len;
 	}
@@ -219,7 +227,7 @@ void SocketSession::__onRead() {
 }
 
 void SocketSession::__onParse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
-	SocketCallback cb = nullptr;
+	SocketRecvCallback cb = nullptr;
 	if (!_cmd_event_map.empty()) {
 		cb = this->_cmd_event_map.at(cmd);
 	}

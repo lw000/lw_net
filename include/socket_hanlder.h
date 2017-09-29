@@ -12,7 +12,7 @@ class AbstractSocketSessionHanlder;
 class AbstractSocketClientHandler;
 class AbstractSocketServerHandler;
 
-typedef std::function<bool(char* buf, lw_int32 bufsize)> SocketCallback;
+typedef std::function<bool(char* buf, lw_int32 bufsize)> SocketRecvCallback;
 
 typedef std::function<int(SocketSession* session)> SocketEventHandler;
 
