@@ -9,6 +9,9 @@
 #include "socket_processor.h"
 #include "socket_session.h"
 
+#include "log4z.h"
+using namespace zsummer::log4z;
+
 using namespace lwstar;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -27,14 +30,17 @@ SocketClient::~SocketClient()
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketClient::create(/*SocketProcessor* processor, */AbstractSocketClientHandler* handler)
+bool SocketClient::create(AbstractSocketClientHandler* handler)
 {													  
-	//this->_processor = processor;
 	this->_handler = handler;
-	bool r = this->_processor->create(false, _core);
+	bool r = this->_processor->create(false);
 	if (r)
 	{
-		this->_session = new SocketSession(this->_handler);
+		this->_session = new SocketSession(this->_handler, this->_core);
+		this->_session->connectedHandler = this->connectedHandler;
+		this->_session->disConnectHandler = this->disConnectHandler;
+		this->_session->timeoutHandler = this->timeoutHandler;
+		this->_session->errorHandler = this->errorHandler;
 		return true;
 	}
 
@@ -74,9 +80,6 @@ int SocketClient::run(const std::string& addr, int port)
 	this->_session->setHost(addr);
 	this->_session->setPort(port);
 
-// 	std::thread t(std::bind(&SocketClient::__run, this));
-// 	t.detach();
-
 	this->start();
 
 	return 0;
@@ -103,14 +106,12 @@ int SocketClient::onStart() {
 
 int SocketClient::onRun() {
 	int r = this->_session->create(SESSION_TYPE::Client, this->_processor, -1, EV_READ | EV_PERSIST);
-
 	if (r == 0)
 	{
-		//(AbstractSocketThread*)(this->_handler)->onStart();
-
 		this->_processor->dispatch();
-
-		//(AbstractSocketThread*)(this->_handler)->onEnd();
+	}
+	else {
+		LOGFMTD("SocketClient::onRun() r = %d", r);
 	}
 
 	this->destroy();

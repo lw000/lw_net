@@ -14,11 +14,17 @@ class SocketCore;
 class SocketClient : public Object, public Threadable
 {
 public:
+	SocketEventHandler connectedHandler;
+	SocketEventHandler disConnectHandler;
+	SocketEventHandler timeoutHandler;
+	SocketEventHandler errorHandler;
+
+public:
 	SocketClient();
 	virtual ~SocketClient();
 
 public:
-	bool create(/*SocketProcessor* processor, */AbstractSocketClientHandler* handler);
+	bool create(AbstractSocketClientHandler* handler);
 	void destroy();
 
 public:

@@ -60,7 +60,7 @@ bool SocketServer::create(AbstractSocketServerHandler* handler)
 {
 	this->_handler = handler;
 
-	bool r = this->_processor->create(true, this->_core);
+	bool r = this->_processor->create(true);
 	if (r)
 	{
 		this->_timer->create(this->_processor);
@@ -90,7 +90,7 @@ void SocketServer::listener_cb(struct evconnlistener *listener, evutil_socket_t 
 {
 	//struct event_base *base = evconnlistener_get_base(listener);
 
-	SocketSession* pSession = new SocketSession(this->_handler);
+	SocketSession* pSession = new SocketSession(this->_handler, this->_core);
 	int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
 	if (r == 0)
 	{
@@ -160,7 +160,7 @@ int SocketServer::onRun() {
 	if (ret)
 	{
 		_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-			SocketSession* pSession = new SocketSession(this->_handler);
+			SocketSession* pSession = new SocketSession(this->_handler, this->_core);
 			int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
 			if (r == 0)
 			{

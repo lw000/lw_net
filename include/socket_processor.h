@@ -7,24 +7,20 @@
 #include "object.h"
 
 struct event_base;
-class SocketCore;
 
 class SocketProcessor : public Object
 {
-public:
-	static void processorUseThreads();
 
 public:
 	SocketProcessor();
 	virtual ~SocketProcessor();
 
 public:
-	bool create(bool enableServer, SocketCore* core);
+	bool create(bool enableServer);
 	void destroy();
 
 public:
 	struct event_base* getBase();
-	SocketCore* getSocketCore();
 
 public:
 	int dispatch();
@@ -37,8 +33,10 @@ public:
 	virtual std::string debug() override;
 
 private:
+	void processorUseThreads();
+
+private:
 	struct event_base* _base;
-	SocketCore* _core;
 };
 
 

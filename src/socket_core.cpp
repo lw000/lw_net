@@ -46,7 +46,7 @@ lw_int32 SocketCore::parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CA
 			lw_int32 dqs = 0;
 			{
 				//std::lock_guard < std::mutex > lock(_m);
-				lw_auto_lock l(&_m);
+				lw_lock_guard l(&_m);
 				_cq.push(const_cast<lw_char8*>(buf), size);
 				dqs = (lw_int32)_cq.size();
 			}
@@ -57,7 +57,7 @@ lw_int32 SocketCore::parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CA
 					std::unique_ptr<lw_char8[]> package;
 					{
 						//std::lock_guard < std::mutex > lock(_m);
-						lw_auto_lock l(&_m);
+						lw_lock_guard l(&_m);
 
 						NetHead *hd = (NetHead*)_cq.front();
 						if (dqs < hd->size) {
@@ -78,7 +78,9 @@ lw_int32 SocketCore::parse(const lw_char8 * buf, lw_int32 size, LW_PARSE_DATA_CA
 					
 					NetHead *phd = (NetHead*)package.get();
 
-					LOGD(phd->debug());
+					if (phd->size < 0) {
+						LOGD(phd->debug());
+					}			
 
 					lw_char8* buf = &package[C_NETHEAD_SIZE];
 					lw_int32 buf_len = phd->size - C_NETHEAD_SIZE;

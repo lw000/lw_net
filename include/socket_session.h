@@ -11,6 +11,7 @@
 
 #include "socket_hanlder.h"
 
+class SocketCore;
 class SocketSession;
 class SocketProcessor;
 
@@ -28,17 +29,18 @@ class SocketSession : public Object
 	friend class CoreSocket;
 
 public:
-	SocketSession(AbstractSocketSessionHanlder* handler);
+	SocketEventHandler connectedHandler;
+	SocketEventHandler disConnectHandler;
+	SocketEventHandler timeoutHandler;
+	SocketEventHandler errorHandler;
+
+public:
+	SocketSession(AbstractSocketSessionHanlder* handler, SocketCore * core);
 	virtual ~SocketSession();
 
 public:
 	int create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev);
 	void destroy();
-
-public:
-	void setConnTimeout(int s);
-	void setRecvTimeout(int s);
-	void setSendTimeout(int s);
 
 public:
 	void setHost(const std::string& host);
@@ -78,6 +80,7 @@ private:
 	bool _connected;
 
 private:
+	SocketCore* _core;
 	SocketProcessor* _processor;
 	struct bufferevent* _bev;
 	AbstractSocketSessionHanlder * _handler;

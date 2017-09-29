@@ -8,14 +8,14 @@
 
 void SocketProcessor::processorUseThreads()
 {
-#ifdef WIN32
+#if defined(__WIN32) || defined(WIN32)
 	evthread_use_windows_threads();
 #else
 	evthread_use_pthreads();
-#endif	
+#endif
 }
 
-SocketProcessor::SocketProcessor() : _base(nullptr), _core(nullptr)
+SocketProcessor::SocketProcessor() : _base(nullptr)
 {
 
 }
@@ -25,13 +25,13 @@ SocketProcessor::~SocketProcessor()
 	
 }
 
-bool SocketProcessor::create(bool enableServer, SocketCore* core)
+bool SocketProcessor::create(bool enableServer)
 {
-	this->_core = core;
-
 	if (this->_base == nullptr)
 	{
 #ifdef WIN32
+		this->processorUseThreads();
+
 		if (enableServer) {
 			struct event_config *cfg = event_config_new();
 			event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
@@ -42,7 +42,7 @@ bool SocketProcessor::create(bool enableServer, SocketCore* core)
 			}
 		} else {
 			this->_base = event_base_new();
-		}		
+		}
 #else
 			this->_base = event_base_new();
 #endif	
@@ -63,11 +63,6 @@ void SocketProcessor::destroy()
 struct event_base* SocketProcessor::getBase()
 { 
 	return this->_base;
-}
-
-SocketCore* SocketProcessor::getSocketCore()
-{
-	return this->_core;
 }
 
 int SocketProcessor::dispatch()

@@ -16,7 +16,6 @@
 
 #include "log4z.h"
 #include <memory>
-//#include <thread>
 
 #define RECV_BUFFER_SIZE	16*2
 
@@ -44,7 +43,8 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(AbstractSocketSessionHanlder* handler) {
+SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, SocketCore * core) {
+	this->_core = core;
 	this->_handler = handler;
 	this->_connected = false;
 	this->_bev = nullptr;
@@ -59,7 +59,7 @@ SocketSession::~SocketSession() {
 int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev) {
 
 	if (this->_processor == nullptr) {
-		printf("this->_processor is nullptr \n");
+		LOGD("this->_processor is nullptr");
 		return -1;
 	}
 
@@ -77,9 +77,7 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 	case SESSION_TYPE::Server: {
 		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		bufferevent_setcb(this->_bev, CoreSocket::__read_cb, CoreSocket::__write_cb, CoreSocket::__event_cb, this);
-
 		bufferevent_enable(this->_bev, ev);
-	
 		this->_connected = true;
 	} break;
 	case SESSION_TYPE::Client: {
@@ -118,18 +116,6 @@ void SocketSession::__reset() {
 	this->_c = SESSION_TYPE::NONE;
 }
 
-void SocketSession::setConnTimeout(int s) {
-
-}
-
-void SocketSession::setRecvTimeout(int s) {
-
-}
-
-void SocketSession::setSendTimeout(int s) {
-
-}
-
 void SocketSession::setHost(const std::string& host) {
 	if (this->_host.compare(host) != 0) {
 		this->_host = host;
@@ -161,7 +147,7 @@ std::string SocketSession::debug() {
 
 lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize) {
 	if (this->_connected) {
-		int c = this->_processor->getSocketCore()->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32 {
+		int c = this->_core->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32 {
 			int c = bufferevent_write(this->_bev, p->buf, p->size);
 			return c;
 		});
@@ -179,7 +165,7 @@ lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize
 		else {
 			iter->second = cb;
 		}
-		int c = this->_processor->getSocketCore()->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32 {
+		int c = this->_core->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32 {
 			int c1 = bufferevent_write(this->_bev, p->buf, p->size);
 			return c1;
 		});
@@ -218,7 +204,7 @@ void SocketSession::__onRead() {
 	while (input_len > 0) {
 		size_t recv_len = bufferevent_read(this->_bev, recv_buf.get(), input_len); 
 		if (recv_len > 0) {
-			if (this->_processor->getSocketCore()->parse(recv_buf.get(), recv_len, CoreSocket::__on_socket_data_parse_cb, this) == 0) {
+			if (this->_core->parse(recv_buf.get(), recv_len, CoreSocket::__on_socket_data_parse_cb, this) == 0) {
 
 			}
 		}
@@ -251,23 +237,41 @@ void SocketSession::__onParse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
 void SocketSession::__onEvent(short ev) {
 	if (ev & BEV_EVENT_CONNECTED) {
 		this->_connected = true;
+		if (this->connectedHandler != nullptr) {
+			this->connectedHandler(this);
+		}
 		this->_handler->onSocketConnected(this);
 		return;
 	}
 
 	if (ev & BEV_EVENT_READING) {
+		if (this->errorHandler != nullptr) {
+			this->errorHandler(this);
+		}
 		this->_handler->onSocketError(this);
 	}
 	else if (ev & BEV_EVENT_WRITING) {
+		if (this->errorHandler != nullptr) {
+			this->errorHandler(this);
+		}
 		this->_handler->onSocketError(this);
 	}
 	else if (ev & BEV_EVENT_EOF) {
+		if (this->disConnectHandler != nullptr) {
+			this->disConnectHandler(this);
+		}
 		this->_handler->onSocketDisConnect(this);
 	}
 	else if (ev & BEV_EVENT_TIMEOUT) {
+		if (this->timeoutHandler != nullptr) {
+			this->timeoutHandler(this);
+		}
 		this->_handler->onSocketTimeout(this);
 	}
 	else if (ev & BEV_EVENT_ERROR) {
+		if (this->errorHandler != nullptr) {
+			this->errorHandler(this);
+		}
 		this->_handler->onSocketError(this);
 	}
 

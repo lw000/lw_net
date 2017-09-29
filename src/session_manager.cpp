@@ -32,7 +32,7 @@ SocketSession* SessionManager::add(const SocketSession* session)
 	SocketSession* pSession = nullptr;
 	{
 		//std::lock_guard < std::mutex > lock(_m);
-		lw_auto_lock l(&_m);
+		lw_lock_guard l(&_m);
 		std::list<SocketSession*>::iterator iter = _live.begin();
 		for (; iter != _live.end(); ++iter)
 		{
@@ -54,7 +54,7 @@ SocketSession* SessionManager::add(const SocketSession* session)
 
 			if (pSession == NULL)
 			{
-				pSession = new SocketSession(nullptr);
+				pSession = new SocketSession(nullptr, nullptr);
 			}
 
 			*pSession = *session;
@@ -74,7 +74,7 @@ void SessionManager::remove(const SocketSession* session)
 {
 	{
 		//std::lock_guard < std::mutex > lock(_m);
-		lw_auto_lock l(&_m);
+		lw_lock_guard l(&_m);
 		SocketSession* pSession = nullptr;
 		std::list<SocketSession*>::iterator iter = _live.begin();
 		for (; iter != _live.end(); ++iter)
@@ -98,7 +98,7 @@ void SessionManager::restoreCache()
 {
 	{
 		//std::lock_guard < std::mutex > lock(_m);
-		lw_auto_lock l(&_m);
+		lw_lock_guard l(&_m);
 		{
 			std::list<SocketSession*>::iterator iter = _die.begin();
 			for (; iter != _die.end(); ++iter)
