@@ -11,11 +11,14 @@
 #include <event2/buffer.h>
 #include <event2/util.h>
 
+#include "common_marco.h"
 #include "net_core.h"
+#include "socket_config.h"
 #include "socket_processor.h"
 
 #include "log4z.h"
 #include <memory>
+
 
 #define RECV_BUFFER_SIZE	16*2
 
@@ -31,9 +34,13 @@ public:
 		session->__onWrite();
 	}
 
-	static void __event_cb(struct bufferevent *bev, short event, void *userdata) {
+	static void __event_cb(struct bufferevent *bev, short ev, void *userdata) {
 		SocketSession *session = (SocketSession*)userdata;
-		session->__onEvent(event);
+		session->__onEvent(ev);
+		if (ev & BEV_EVENT_CONNECTED) {
+			return;
+		}
+		delete session;
 	}
 
 	static void __on_socket_data_parse_cb(lw_int32 cmd, char* buf, lw_int32 bufsize, void* userdata) {
@@ -43,17 +50,21 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core) {
+SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core, SocketConfig* config) {
 	this->_core = core;
 	this->_handler = handler;
 	this->_connected = false;
 	this->_bev = nullptr;
-	this->_port = -1;
+	this->_config = config;
 	this->_c = SESSION_TYPE::NONE;
 }
 
 SocketSession::~SocketSession() {
 	this->__reset();
+
+	if (this->_config != nullptr) {
+		SAFE_DELETE(this->_config);
+	}
 }
 
 int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev) {
@@ -84,8 +95,8 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		struct sockaddr_in saddr;
 		memset(&saddr, 0, sizeof(saddr));
 		saddr.sin_family = AF_INET;
-		saddr.sin_addr.s_addr = inet_addr(this->_host.c_str());
-		saddr.sin_port = htons(this->_port);
+		saddr.sin_addr.s_addr = inet_addr(this->_config->getHost().c_str());
+		saddr.sin_port = htons(this->_config->getPort());
 
 		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE/* | BEV_OPT_THREADSAFE*/);
 		int con = bufferevent_socket_connect(this->_bev, (struct sockaddr *)&saddr, sizeof(saddr));
@@ -107,41 +118,23 @@ void SocketSession::destroy() {
 	this->__reset();
 }
 
+
+bool SocketSession::connected() {
+	return this->_connected;
+}
+
 void SocketSession::__reset() {
-	this->_connected = false;
 	this->_bev = nullptr;
 	this->_handler = nullptr;
-	this->_host.clear();
-	this->_port = -1;
+	this->_connected = false;
 	this->_c = SESSION_TYPE::NONE;
-}
-
-void SocketSession::setHost(const std::string& host) {
-	if (this->_host.compare(host) != 0) {
-		this->_host = host;
-	}
-}
-
-std::string SocketSession::getHost() const {
-	return this->_host;
-}
-
-void SocketSession::setPort(int port) {
-	this->_port = port;
-}
-
-int SocketSession::getPort() const {
-	return this->_port;
-}
-
-bool SocketSession::connected() { 
-	return this->_connected;
+	this->_config->reset();
 }
 
 std::string SocketSession::debug() {
 	char buf[512];
 	evutil_socket_t fd = bufferevent_getfd(this->_bev);
-	sprintf(buf, "fd:%d, ip:%s, port:%d, c:%d, connected:%d", fd, this->_host.c_str(), this->_port, this->_c, this->_connected);
+	sprintf(buf, "fd:%d, ip:%s, port:%d, c:%d, connected:%d", fd, this->_config->getHost().c_str(), this->_config->getPort(), this->_c, this->_connected);
 	return std::string(buf);
 }
 

@@ -16,6 +16,8 @@ typedef std::function<bool(char* buf, lw_int32 bufsize)> SocketRecvCallback;
 
 typedef std::function<int(SocketSession* session)> SocketEventHandler;
 
+#define SOCKET_EVENT_SELECTOR(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, ##__VA_ARGS__)
+
 class AbstractSocketSessionHanlder
 {
 	friend class SocketSession;
@@ -36,6 +38,7 @@ protected:
 class AbstractSocketClientHandler : public AbstractSocketSessionHanlder
 {
 	friend class SocketClient;
+
 public:
 	virtual ~AbstractSocketClientHandler() {}
 };

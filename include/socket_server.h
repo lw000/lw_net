@@ -12,6 +12,7 @@
 #include <functional>
 
 class Timer;
+class SocketConfig;
 class SocketSession;
 class SocketProcessor;
 class NetCore;
@@ -30,24 +31,14 @@ public:
 	void destroy();
 
 public:
-	lw_int32 listen(u_short port, std::function<void(lw_int32 what)> func);
+	lw_int32 listen(SocketConfig* config, std::function<void(lw_int32 what)> func);
 
 public:
 	int loopbreak();
 	int loopexit();
 
 public:
-	int getPort() const { return this->_port; }
-
-public:
-	void listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int);
-	void listener_error_cb(struct evconnlistener *);
-
-public:
 	virtual std::string debug() override;
-
-private:
-	struct evconnlistener * __createConnListener(int port);
 
 protected:
 	virtual int onStart() override;
@@ -55,11 +46,11 @@ protected:
 	virtual int onEnd() override;
 
 private:
-	SocketProcessor* _processor;
 	NetCore* _core;
 	SocketListener* _listener;
+	SocketProcessor* _processor;
 
-	lw_int32 _port;
+private:
 	Timer* _timer;
 
 private:

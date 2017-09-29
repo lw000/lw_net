@@ -6,8 +6,10 @@
 #include <event2/bufferevent.h>
 #include <event2/listener.h>
 
-#include "socket_processor.h"
 #include "common_marco.h"
+#include "socket_config.h"
+#include "socket_processor.h"
+
 #include <type_traits>
 
 static void __listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int, void *);
@@ -32,16 +34,35 @@ SocketListener::SocketListener() : _listener(nullptr)
 
 SocketListener::~SocketListener()
 {
-	
+	if (this->_config != nullptr) {
+		SAFE_DELETE(this->_config);
+	}
 }
 
-bool SocketListener::create(SocketProcessor* processor, int port)
+bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 {	
+	this->_config = config;
 	struct evconnlistener *listener = nullptr;
 	struct sockaddr_in sin;
 	sin.sin_family = AF_INET;
+
+	std::string host = this->_config->getHost();
+	if (host.empty()) {
+		sin.sin_addr.s_addr = htonl(0);	//绑定0.0.0.0地址
+	}
+	else {
+		sin.sin_addr.s_addr = inet_addr(host.c_str());	//绑定地址
+	}
+	
 	sin.sin_addr.s_addr = htonl(0);	//绑定0.0.0.0地址
-	sin.sin_port = htons(port);
+
+	int port = this->_config->getPort();
+	if (port != 0) {
+		sin.sin_port = htons(port);
+	}
+	else {
+		sin.sin_port = htons(0);
+	}
 	//inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr.s_addr);
 	this->_listener = evconnlistener_new_bind(processor->getBase(), ::__listener_cb, this,
 		LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE, -1, (struct sockaddr*)&sin, sizeof(sin));

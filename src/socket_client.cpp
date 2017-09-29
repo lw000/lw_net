@@ -6,6 +6,8 @@
 #include "event2/event.h"
 
 #include "net_core.h"
+#include "socket_config.h"
+#include "socket_hanlder.h"
 #include "socket_processor.h"
 #include "socket_session.h"
 
@@ -32,13 +34,12 @@ SocketClient::~SocketClient()
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketClient::create(AbstractSocketClientHandler* handler)
+bool SocketClient::create(AbstractSocketClientHandler* handler, SocketConfig* config)
 {													  
-	this->_handler = handler;
 	bool r = this->_processor->create(false);
 	if (r)
 	{
-		this->_session = new SocketSession(this->_handler, this->_core);
+		this->_session = new SocketSession(handler, this->_core, config);
 		this->_session->connectedHandler = this->connectedHandler;
 		this->_session->disConnectHandler = this->disConnectHandler;
 		this->_session->timeoutHandler = this->timeoutHandler;
@@ -69,19 +70,8 @@ std::string SocketClient::debug()
 	return std::string(buf);
 }
 
-void SocketClient::setAddr(const std::string& addr) {
-	this->_session->setHost(addr);
-}
-
-void SocketClient::setPort(int port) {
-	this->_session->setPort(port);
-}
-
-int SocketClient::run(const std::string& addr, int port)
+int SocketClient::run()
 {
-	this->_session->setHost(addr);
-	this->_session->setPort(port);
-
 	this->start();
 
 	return 0;

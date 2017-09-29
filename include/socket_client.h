@@ -7,6 +7,7 @@
 
 #include "Threadable.h"
 
+class SocketConfig;
 class SocketClient;
 class SocketProcessor;
 class NetCore;
@@ -24,15 +25,11 @@ public:
 	virtual ~SocketClient();
 
 public:
-	bool create(AbstractSocketClientHandler* handler);
+	bool create(AbstractSocketClientHandler* handler, SocketConfig* config);
 	void destroy();
 
 public:
-	void setAddr(const std::string& addr);
-	void setPort(int port);
-
-public:
-	int run(const std::string& addr, int port);
+	int run();
 
 public:
 	int loopbreak();
@@ -53,7 +50,6 @@ private:
 	SocketProcessor* _processor;
 	SocketSession* _session;
 	NetCore* _core;
-	AbstractSocketClientHandler* _handler;
 };
 
 #endif // !__SocketClient_H__

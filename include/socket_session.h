@@ -12,6 +12,7 @@
 #include "socket_hanlder.h"
 
 class NetCore;
+class SocketConfig;
 class SocketSession;
 class SocketProcessor;
 
@@ -33,19 +34,12 @@ public:
 	SocketEventHandler errorHandler;
 
 public:
-	SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core);
+	SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core, SocketConfig* config);
 	virtual ~SocketSession();
 
 public:
 	int create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev);
 	void destroy();
-
-public:
-	void setHost(const std::string& host);
-	std::string getHost() const;
-
-	void setPort(int port);
-	int getPort() const;
 
 public:
 	bool connected();
@@ -73,9 +67,8 @@ private:
 	SESSION_TYPE _c;	//session¿‡–Õ
 
 private:
-	std::string _host;
-	int _port;
 	bool _connected;
+	SocketConfig* _config;
 
 private:
 	NetCore* _core;

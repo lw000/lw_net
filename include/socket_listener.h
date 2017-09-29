@@ -10,6 +10,7 @@
 #include <functional>
 
 struct evconnlistener;
+class SocketConfig;
 class SocketProcessor;
 
 class SocketListener : public Object
@@ -19,7 +20,7 @@ public:
 	virtual ~SocketListener();
 
 public:
-	bool create(SocketProcessor* processor, int port);
+	bool create(SocketProcessor* processor, SocketConfig* config);
 	void destroy();
 
 public:
@@ -34,6 +35,7 @@ public:
 	virtual std::string debug() override;
 
 private:
+	SocketConfig* _config;
 	struct evconnlistener* _listener;
 	std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> listener_func;
 	std::function<void(void * userdata, int err)> listener_error_func;

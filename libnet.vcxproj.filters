@@ -90,5 +90,8 @@
     <ClInclude Include="include\nanomsgcpp_socket.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\socket_config.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

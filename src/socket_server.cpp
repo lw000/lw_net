@@ -24,21 +24,7 @@
 #include "socket_timer.h"
 #include "socket_processor.h"
 #include "socket_listener.h"
-
-static void __listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int, void *);
-static void __listener_error_cb(struct evconnlistener *, void *);
-
-static void __listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen, void *userdata)
-{
-	SocketServer * server = (SocketServer*)userdata;
-	server->listener_cb(listener, fd, sa, socklen);
-}
-
-static void __listener_error_cb(struct evconnlistener * listener, void * userdata)
-{
-	SocketServer * server = (SocketServer*)userdata;
-	server->listener_error_cb(listener);
-}
+#include "socket_config.h"
 
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
@@ -86,81 +72,18 @@ std::string SocketServer::debug()
 	return std::string("SocketServer");
 }
 
-void SocketServer::listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen)
-{
-	//struct event_base *base = evconnlistener_get_base(listener);
-
-	SocketSession* pSession = new SocketSession(this->_handler, this->_core);
-	int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
-	if (r == 0)
-	{
-		{
-			char hostBuf[NI_MAXHOST];
-			char portBuf[64];
-			getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
-
-			pSession->setHost(hostBuf);
-			pSession->setPort(std::stoi(portBuf));
-		}
-		this->_handler->onListener(pSession);
-	}
-	else
-	{
-		SAFE_DELETE(pSession);
-		_processor->loopbreak();
-		fprintf(stderr, "error constructing SocketSession!");
-	}
-}
-
-void SocketServer::listener_error_cb(struct evconnlistener * listener)
-{
-	struct event_base *base = evconnlistener_get_base(listener);
-
-	int err = EVUTIL_SOCKET_ERROR();
-
-	//printf("got an error %d (%s) on the listener. shutting down.\n", err, evutil_socket_error_to_string(err));
-
-	_processor->loopexit();
-}
-
-lw_int32 SocketServer::listen(u_short port, std::function<void(lw_int32 what)> func)
+lw_int32 SocketServer::listen(SocketConfig* config, std::function<void(lw_int32 what)> func)
 {
  	if (nullptr == func) return -1;
 
-	this->_port = port;
 	this->_onFunc = func;
 
-// 	std::thread t(std::bind(&SocketServer::__run, this));
-// 	t.detach();
-
-	this->start();
-
-	return 0;
-}
-
-struct evconnlistener * SocketServer::__createConnListener(int port)
-{
-	struct evconnlistener *listener = nullptr;
-	struct sockaddr_in sin;
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(0);	//绑定0.0.0.0地址
-	sin.sin_port = htons(port);
-	//inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr.s_addr);
-	listener = evconnlistener_new_bind(_processor->getBase(), ::__listener_cb, this,
-		LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE, -1, (struct sockaddr*)&sin, sizeof(sin));
-	return listener;
-}
-
-int SocketServer::onStart() {
-	return 0;
-}
-
-int SocketServer::onRun() {
-	bool ret = _listener->create(_processor, this->_port);
+	bool ret = _listener->create(_processor, config);
 	if (ret)
 	{
 		_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-			SocketSession* pSession = new SocketSession(this->_handler, this->_core);
+			SocketConfig* config = new SocketConfig;
+			SocketSession* pSession = new SocketSession(this->_handler, this->_core, config);
 			int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
 			if (r == 0)
 			{
@@ -169,8 +92,8 @@ int SocketServer::onRun() {
 					char portBuf[64];
 					getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
 
-					pSession->setHost(hostBuf);
-					pSession->setPort(std::stoi(portBuf));
+					config->setHost(hostBuf);
+					config->setPort(std::stoi(portBuf));
 				}
 				this->_handler->onListener(pSession);
 			}
@@ -202,19 +125,21 @@ int SocketServer::onRun() {
 			});
 		}
 
-		//AbstractSocketThread* t = (AbstractSocketThread*)(_handler);
-		//t->onStart();
-		int r = _processor->dispatch();
-		//printf("r = %d\n", r);
-		//t->onEnd();
+		this->start();
+	}
 
-		// 		if (listener != nullptr)
-		// 		{
-		// 			evconnlistener_free(listener);
-		// 		}
+	return 0;
+}
 
-		this->_listener->destroy();
-	}	
+int SocketServer::onStart() {
+	return 0;
+}
+
+int SocketServer::onRun() {
+
+	int r = _processor->dispatch();
+
+	this->_listener->destroy();
 
 	this->destroy();
 

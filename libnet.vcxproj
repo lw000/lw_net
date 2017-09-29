@@ -46,6 +46,7 @@
     <ClInclude Include="./include/socket_server.h" />
     <ClInclude Include="./include/socket_timer.h" />
     <ClInclude Include="include\nanomsgcpp_socket.h" />
+    <ClInclude Include="include\socket_config.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{006686E3-6160-4984-827E-B9200E5B3338}</ProjectGuid>
