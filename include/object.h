@@ -23,7 +23,7 @@ public:
 	std::string getName() const;
 
 public:
-	virtual std::string debug() = 0;
+	virtual std::string debug();
 
 private:
 	void *_data;

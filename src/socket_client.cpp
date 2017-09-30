@@ -22,9 +22,8 @@ using namespace lwstar;
 
 SocketClient::SocketClient() : _processor(nullptr), _session(nullptr)
 {
-	_core = new NetCore;
-
-	this->_processor = new SocketProcessor;
+	this->_core = new NetCore;
+	this->_processor = new SocketProcessor();
 }
 
 SocketClient::~SocketClient()
@@ -35,19 +34,17 @@ SocketClient::~SocketClient()
 }
 
 bool SocketClient::create(AbstractSocketClientHandler* handler, SocketConfig* config)
-{													  
-	bool r = this->_processor->create(false);
-	if (r)
-	{
+{						
+	bool ret = this->_processor->create(false);
+	if (ret) {
 		this->_session = new SocketSession(handler, this->_core, config);
 		this->_session->connectedHandler = this->connectedHandler;
 		this->_session->disConnectHandler = this->disConnectHandler;
 		this->_session->timeoutHandler = this->timeoutHandler;
 		this->_session->errorHandler = this->errorHandler;
-		return true;
 	}
 
-	return false;
+	return true;
 }
 
 void SocketClient::destroy()
@@ -55,11 +52,6 @@ void SocketClient::destroy()
 	if (this->_session != nullptr)
 	{
 		this->_session->destroy();
-	}
-
-	if (this->_processor != nullptr)
-	{
-		this->_processor->destroy();
 	}
 }
 
@@ -70,7 +62,7 @@ std::string SocketClient::debug()
 	return std::string(buf);
 }
 
-int SocketClient::run()
+int SocketClient::open()
 {
 	this->start();
 
@@ -93,6 +85,7 @@ SocketSession* SocketClient::getSession()
 }
 
 int SocketClient::onStart() {
+
 	return 0;
 }
 
@@ -112,5 +105,6 @@ int SocketClient::onRun() {
 }
 
 int SocketClient::onEnd() {
+	
 	return 0;
 }

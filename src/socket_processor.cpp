@@ -6,7 +6,7 @@
 #include <event2/util.h>
 #include <event2/thread.h>
 
-void SocketProcessor::processorUseThreads()
+void SocketProcessor::use_threads()
 {
 #if defined(__WIN32) || defined(WIN32)
 	evthread_use_windows_threads();
@@ -17,20 +17,24 @@ void SocketProcessor::processorUseThreads()
 
 SocketProcessor::SocketProcessor() : _base(nullptr)
 {
-
+	
 }
 
 SocketProcessor::~SocketProcessor()
 {
-	
+	if (this->_base != nullptr)
+	{
+		event_base_free(this->_base);
+		this->_base = nullptr;
+	}
 }
 
-bool SocketProcessor::create(bool enableServer)
-{
+bool SocketProcessor::create(bool enableServer) {
+	
 	if (this->_base == nullptr)
 	{
 #ifdef WIN32
-		this->processorUseThreads();
+		this->use_threads();
 
 		if (enableServer) {
 			struct event_config *cfg = event_config_new();
@@ -40,24 +44,16 @@ bool SocketProcessor::create(bool enableServer)
 				this->_base = event_base_new_with_config(cfg);
 				event_config_free(cfg);
 			}
-		} else {
+		}
+		else {
 			this->_base = event_base_new();
 		}
 #else
-			this->_base = event_base_new();
-#endif	
+		this->_base = event_base_new();
+#endif
 	}
 
 	return true;
-}
-
-void SocketProcessor::destroy()
-{
-	if (this->_base != nullptr)
-	{
-		event_base_free(this->_base);
-		this->_base = nullptr;
-	}
 }
 
 struct event_base* SocketProcessor::getBase()

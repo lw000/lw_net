@@ -26,7 +26,7 @@ public:
 	virtual ~ITimer() {}
 
 public:
-	virtual int create(SocketProcessor* processor = nullptr) = 0;
+	virtual int create(SocketProcessor* processor) = 0;
 	virtual void destroy() = 0;
 
 public:
@@ -45,7 +45,7 @@ public:
 	virtual ~Timer();
 
 public:
-	int create(SocketProcessor* processor = nullptr);
+	int create(SocketProcessor* processor);
 	void destroy();
 
 public:

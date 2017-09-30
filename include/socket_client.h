@@ -2,10 +2,10 @@
 #define __SocketClient_H__
 
 #include <string>
-#include "object.h"
-#include "socket_hanlder.h"
 
+#include "object.h"
 #include "Threadable.h"
+#include "socket_hanlder.h"
 
 class SocketConfig;
 class SocketClient;
@@ -29,7 +29,7 @@ public:
 	void destroy();
 
 public:
-	int run();
+	int open();
 
 public:
 	int loopbreak();

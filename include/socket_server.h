@@ -12,13 +12,11 @@
 #include <functional>
 
 class Timer;
+class NetCore;
 class SocketConfig;
 class SocketSession;
 class SocketProcessor;
-class NetCore;
 class SocketListener;
-
-struct evconnlistener;
 
 class SocketServer : public Object, public Threadable
 {
@@ -27,11 +25,11 @@ public:
 	virtual ~SocketServer();
 
 public:
-	bool create(AbstractSocketServerHandler* handler);
+	bool create(AbstractSocketServerHandler* handler, SocketConfig* config);
 	void destroy();
 
 public:
-	lw_int32 listen(SocketConfig* config, std::function<void(lw_int32 what)> func);
+	lw_int32 serv(std::function<void(lw_int32 what)> func);
 
 public:
 	int loopbreak();
@@ -49,9 +47,6 @@ private:
 	NetCore* _core;
 	SocketListener* _listener;
 	SocketProcessor* _processor;
-
-private:
-	Timer* _timer;
 
 private:
 	std::function<void(lw_int32 what)> _onFunc;

@@ -104,12 +104,16 @@ void SocketListener::listener_cb(struct evconnlistener *listener, evutil_socket_
 {
 	struct event_base *base = evconnlistener_get_base(listener);
 
-	this->listener_func(fd, sa, socklen);
+	if (this->listener_func != nullptr) {
+		this->listener_func(fd, sa, socklen);
+	}
 }
 
 void SocketListener::listener_error_cb(struct evconnlistener * listener)
 {
 	struct event_base *base = evconnlistener_get_base(listener);
 	int err = EVUTIL_SOCKET_ERROR();
-	this->listener_error_func(nullptr, err);
+	if (this->listener_error_func != nullptr) {
+		this->listener_error_func(nullptr, err);
+	}
 }

@@ -26,128 +26,44 @@
 #include "socket_listener.h"
 #include "socket_config.h"
 
+#include <log4z.h>
+using namespace zsummer::log4z;
+
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
-	this->_processor = new SocketProcessor;
-	this->_core = new NetCore;
-	this->_timer = new Timer;
+	this->_processor = new SocketProcessor();
 	this->_listener = new SocketListener;
+	this->_core = new NetCore;
 }
 
 SocketServer::~SocketServer()
 {
-	SAFE_DELETE(this->_timer);
 	SAFE_DELETE(this->_core);
 	SAFE_DELETE(this->_listener);
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketServer::create(AbstractSocketServerHandler* handler)
+bool SocketServer::create(AbstractSocketServerHandler* handler, SocketConfig* config)
 {
 	this->_handler = handler;
 
-	bool r = this->_processor->create(true);
-	if (r)
-	{
-		this->_timer->create(this->_processor);
+	bool ret = this->_processor->create(true);
+	if (ret) {
+		ret = _listener->create(_processor, config);
+		if (ret) {
+
+		}
 	}
-	return r;
+	
+	return ret;
 }
 
 void SocketServer::destroy()
 {
-	if (_timer != nullptr)
+	if (this->_listener != nullptr)
 	{
-		this->_timer->destroy();
+		this->_listener->destroy();
 	}
-
-	if (this->_processor != nullptr)
-	{
-		this->_processor->destroy();
-	}
-}
-
-std::string SocketServer::debug()
-{
-	return std::string("SocketServer");
-}
-
-lw_int32 SocketServer::listen(SocketConfig* config, std::function<void(lw_int32 what)> func)
-{
- 	if (nullptr == func) return -1;
-
-	this->_onFunc = func;
-
-	bool ret = _listener->create(_processor, config);
-	if (ret)
-	{
-		_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-			SocketConfig* config = new SocketConfig;
-			SocketSession* pSession = new SocketSession(this->_handler, this->_core, config);
-			int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
-			if (r == 0)
-			{
-				{
-					char hostBuf[NI_MAXHOST];
-					char portBuf[64];
-					getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
-
-					config->setHost(hostBuf);
-					config->setPort(std::stoi(portBuf));
-				}
-				this->_handler->onListener(pSession);
-			}
-			else
-			{
-				SAFE_DELETE(pSession);
-				_processor->loopbreak();
-				fprintf(stderr, "error constructing SocketSession!");
-			}
-		});
-
-		_listener->set_listener_errorcb([this](void * userdata, int er) {
-			int err = EVUTIL_SOCKET_ERROR();
-			//			printf("got an error %d (%s) on the listener. shutting down.\n", err, evutil_socket_error_to_string(err));
-
-			this->_processor->loopexit();
-		});
-
-		// 初始化完成定时器
-		{
-			this->_timer->start(100, 1000, [this](int tid, unsigned int tms) -> bool
-			{
-				if (this->_onFunc != nullptr)
-				{
-					this->_onFunc(0);
-				}
-
-				return false;
-			});
-		}
-
-		this->start();
-	}
-
-	return 0;
-}
-
-int SocketServer::onStart() {
-	return 0;
-}
-
-int SocketServer::onRun() {
-
-	int r = _processor->dispatch();
-
-	this->_listener->destroy();
-
-	this->destroy();
-
-	return 0;
-}
-
-int SocketServer::onEnd() {
-	return 0;
 }
 
 int SocketServer::loopbreak()
@@ -158,4 +74,79 @@ int SocketServer::loopbreak()
 int SocketServer::loopexit()
 {
 	return this->_processor->loopexit();
+}
+
+std::string SocketServer::debug()
+{
+	return std::string("SocketServer");
+}
+
+lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
+{
+	if (nullptr == func) {
+		LOGD("func is null");
+		return -1;
+	}
+
+	if (nullptr == _listener) {
+		LOGD("_listener is null");
+		return -2;
+	}
+
+	this->_onFunc = func;
+
+	_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
+		SocketConfig* config = new SocketConfig;
+		SocketSession* pSession = new SocketSession(this->_handler, this->_core, config);
+		int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
+		if (r == 0)
+		{
+			char hostBuf[NI_MAXHOST];
+			char portBuf[64];
+			getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
+
+			config->setHost(hostBuf);
+			config->setPort(std::stoi(portBuf));
+
+			this->_handler->onListener(pSession);
+		}
+		else
+		{
+			SAFE_DELETE(pSession);
+			_processor->loopbreak();
+			LOGD("error constructing SocketSession!");
+		}
+	});
+
+	_listener->set_listener_errorcb([this](void * userdata, int er) {
+		LOGFMTD("got an error %d (%s) on the listener. shutting down.\n", er, evutil_socket_error_to_string(er));
+		this->_processor->loopexit();
+	});
+
+	if (this->_onFunc != nullptr)
+	{
+		this->_onFunc(0);
+	}
+
+	this->start();
+
+	return 0;
+}
+
+int SocketServer::onStart() {
+	return 0;
+}
+
+int SocketServer::onRun() {
+
+	int ret = _processor->dispatch();
+
+	this->destroy();
+
+	return 0;
+}
+
+int SocketServer::onEnd() {
+
+	return 0;
 }

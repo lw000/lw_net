@@ -5,12 +5,11 @@ std::ostream& operator<<(std::ostream & os, Object & o) {
 	return os;
 }
 
-Object::Object() {
-	_data = nullptr;
-	_tag = -1;
+Object::Object() : _data(nullptr), _tag(-1) {
 }
 
 Object::~Object() {
+
 }
 
 void Object::setUserData(void* data) {

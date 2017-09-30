@@ -58,9 +58,6 @@ private:
 	void __onParse(lw_int32 cmd, char* buf, lw_int32 bufsize);
 
 private:
-	void __reset();
-
-private:
 	std::unordered_map<lw_int32, SocketRecvCallback> _cmd_event_map;
 
 private:

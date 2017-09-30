@@ -53,15 +53,13 @@ public:
 SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core, SocketConfig* config) {
 	this->_core = core;
 	this->_handler = handler;
+	this->_config = config;
 	this->_connected = false;
 	this->_bev = nullptr;
-	this->_config = config;
 	this->_c = SESSION_TYPE::NONE;
 }
 
 SocketSession::~SocketSession() {
-	this->__reset();
-
 	if (this->_config != nullptr) {
 		SAFE_DELETE(this->_config);
 	}
@@ -115,20 +113,11 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 }
 
 void SocketSession::destroy() {
-	this->__reset();
-}
 
+}
 
 bool SocketSession::connected() {
 	return this->_connected;
-}
-
-void SocketSession::__reset() {
-	this->_bev = nullptr;
-	this->_handler = nullptr;
-	this->_connected = false;
-	this->_c = SESSION_TYPE::NONE;
-	this->_config->reset();
 }
 
 std::string SocketSession::debug() {
@@ -183,24 +172,6 @@ void SocketSession::__onRead() {
 	struct evbuffer *input = bufferevent_get_input(this->_bev);
 	size_t input_len = evbuffer_get_length(input);
 
-#if 0
-	char recv_buf[RECV_BUFFER_SIZE + 1];
-	::memset(recv_buf, 0x00, sizeof(recv_buf));
-	while (input_len > 0) {
-		size_t recv_len = bufferevent_read(this->_bev, recv_buf, RECV_BUFFER_SIZE);
-		if (recv_len > 0) {
-			if (this->_core->parse(recv_buf, recv_len, CoreSocket::__on_socket_data_parse_cb, this) == 0) {
-
-			}
-		}
-		else {
-			lw_char8 buf[256];
-			sprintf(buf, "SocketSession::__onRead [read_len: %d]", recv_len);
-			LOGD(buf);
-		}
-		input_len -= recv_len;
-	}
-#else
 	std::unique_ptr<lw_char8[]> recv_buf(new lw_char8[input_len]);
 	while (input_len > 0) {
 		size_t recv_len = bufferevent_read(this->_bev, recv_buf.get(), input_len); 
@@ -210,13 +181,10 @@ void SocketSession::__onRead() {
 			}
 		}
 		else {
-			lw_char8 buf[256];
-			sprintf(buf, "SocketSession::__onRead. read_len: %d", recv_len);
-			LOGD(buf);
+			LOGFMTD("SocketSession::__onRead. read_len: %d", recv_len);
 		}
 		input_len -= recv_len;
 	}
-#endif
 }
 
 void SocketSession::__onParse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
