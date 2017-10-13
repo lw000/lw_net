@@ -10,7 +10,7 @@
 class SocketConfig;
 class SocketClient;
 class SocketProcessor;
-class NetCore;
+class NetIOBuffer;
 
 class SocketClient : public Object, public Threadable
 {
@@ -49,7 +49,7 @@ protected:
 private:
 	SocketProcessor* _processor;
 	SocketSession* _session;
-	NetCore* _core;
+	NetIOBuffer* _iobuffer;
 };
 
 #endif // !__SocketClient_H__

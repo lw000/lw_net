@@ -11,7 +11,7 @@
 
 #include "socket_hanlder.h"
 
-class NetCore;
+class NetIOBuffer;
 class SocketConfig;
 class SocketSession;
 class SocketProcessor;
@@ -34,15 +34,16 @@ public:
 	SocketEventHandler errorHandler;
 
 public:
-	SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core, SocketConfig* config);
+	SocketSession(AbstractSocketSessionHanlder* handler, NetIOBuffer * core, SocketConfig* config);
 	virtual ~SocketSession();
 
 public:
-	int create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev);
+	int create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd = -1);
 	void destroy();
 
 public:
 	bool connected();
+	SocketConfig* getConfig() const;
 
 public:
 	virtual std::string debug() override;
@@ -68,7 +69,7 @@ private:
 	SocketConfig* _config;
 
 private:
-	NetCore* _core;
+	NetIOBuffer* _iobuffer;
 	SocketProcessor* _processor;
 	struct bufferevent* _bev;
 	AbstractSocketSessionHanlder * _handler;

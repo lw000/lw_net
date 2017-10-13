@@ -33,9 +33,9 @@ bool SocketProcessor::create(bool enableServer) {
 	
 	if (this->_base == nullptr)
 	{
-#ifdef WIN32
 		this->use_threads();
 
+#ifdef WIN32
 		if (enableServer) {
 			struct event_config *cfg = event_config_new();
 			event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
@@ -54,6 +54,10 @@ bool SocketProcessor::create(bool enableServer) {
 	}
 
 	return true;
+}
+
+void SocketProcessor::destroy() {
+
 }
 
 struct event_base* SocketProcessor::getBase()

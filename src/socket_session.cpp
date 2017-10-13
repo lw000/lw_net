@@ -12,7 +12,7 @@
 #include <event2/util.h>
 
 #include "common_marco.h"
-#include "net_core.h"
+#include "net_iobuffer.h"
 #include "socket_config.h"
 #include "socket_processor.h"
 
@@ -40,18 +40,20 @@ public:
 		if (ev & BEV_EVENT_CONNECTED) {
 			return;
 		}
+		session->destroy();
 		delete session;
 	}
 
 	static void __on_socket_data_parse_cb(lw_int32 cmd, char* buf, lw_int32 bufsize, void* userdata) {
 		SocketSession *session = (SocketSession *)userdata;
 		session->__onParse(cmd, buf, bufsize);
+// 		LOGD("__on_socket_data_parse_cb");
 	}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetCore * core, SocketConfig* config) {
-	this->_core = core;
+SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetIOBuffer * iobuffer, SocketConfig* config) {
+	this->_iobuffer = iobuffer;
 	this->_handler = handler;
 	this->_config = config;
 	this->_connected = false;
@@ -65,7 +67,7 @@ SocketSession::~SocketSession() {
 	}
 }
 
-int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd, short ev) {
+int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd) {
 
 	if (this->_processor == nullptr) {
 		LOGD("this->_processor is nullptr");
@@ -85,8 +87,17 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 	switch (this->_c) {
 	case SESSION_TYPE::Server: {
 		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
-		bufferevent_setcb(this->_bev, CoreSocket::__read_cb, CoreSocket::__write_cb, CoreSocket::__event_cb, this);
-		bufferevent_enable(this->_bev, ev);
+	
+// 		struct timeval tv_read = { 10, 0 }, tv_write = { 10, 0 };
+// 		bufferevent_set_timeouts(this->_bev, &tv_read, &tv_write);		
+// 		bufferevent_enable(this->_bev, BEV_OPT_THREADSAFE);
+
+		bufferevent_setcb(this->_bev, CoreSocket::__read_cb, CoreSocket::__write_cb/*NULL*/, CoreSocket::__event_cb, this);
+		bufferevent_enable(this->_bev, EV_READ | EV_WRITE | EV_PERSIST);
+		int nRecvBuf = 32 * 1024;//设置为32K
+		int c1 = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
+		int nSendBuf = 32 * 1024;//设置为32K
+		int c2 = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
 		this->_connected = true;
 	} break;
 	case SESSION_TYPE::Client: {
@@ -96,16 +107,22 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		saddr.sin_addr.s_addr = inet_addr(this->_config->getHost().c_str());
 		saddr.sin_port = htons(this->_config->getPort());
 
-		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE/* | BEV_OPT_THREADSAFE*/);
+		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		int con = bufferevent_socket_connect(this->_bev, (struct sockaddr *)&saddr, sizeof(saddr));
 		if (con >= 0) {
-			bufferevent_setcb(this->_bev, CoreSocket::__read_cb, NULL, CoreSocket::__event_cb, this);
-			bufferevent_enable(this->_bev, ev);
+			bufferevent_setcb(this->_bev, CoreSocket::__read_cb, /*CoreSocket::__write_cb*/NULL, CoreSocket::__event_cb, this);
+			bufferevent_enable(this->_bev, EV_READ | EV_PERSIST);
+			
+			evutil_socket_t nfd = bufferevent_getfd(this->_bev);
+			int nRecvBuf = 32 * 1024;//设置为32K
+			int c1 = setsockopt(nfd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
+			int nSendBuf = 32 * 1024;//设置为32K
+			int c2 = setsockopt(nfd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
 		}
 		else {
 			this->_connected = false;
 		}
-	} break;	
+	} break;
 	default:
 		break;
 	}
@@ -120,6 +137,10 @@ bool SocketSession::connected() {
 	return this->_connected;
 }
 
+SocketConfig* SocketSession::getConfig() const {
+	return this->_config;
+}
+
 std::string SocketSession::debug() {
 	char buf[512];
 	evutil_socket_t fd = bufferevent_getfd(this->_bev);
@@ -128,44 +149,67 @@ std::string SocketSession::debug() {
 }
 
 lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize) {
-	if (this->_connected) {
-		int c = this->_core->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32 {
-			int c = bufferevent_write(this->_bev, p->buf, p->size);
-			return c;
-		});
-		return c;
-	}
-	else
-	{
+	if (!this->_connected) {
 		LOGD("network is not connected.");
+		return -1;
 	}
-	return -1;
+	
+	int c = this->_iobuffer->send(cmd, object, objectSize, [this](NET_MESSAGE * p) -> lw_int32 {
+		int c1 = bufferevent_write(this->_bev, p->buf, p->size);
+		if (c1 != 0) {
+			LOGFMTD("error occurred. [%d]", c1);
+		}
+		return c1;
+	});
+	return c;
 }
 
 lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize, lw_int32 recvcmd, SocketRecvCallback cb) {
-	if (this->_connected) {
-		std::unordered_map<lw_int32, SocketRecvCallback>::iterator iter = this->_cmd_event_map.find(recvcmd);
-		if (iter == _cmd_event_map.end()) {
-			this->_cmd_event_map.insert(std::pair<lw_int32, SocketRecvCallback>(recvcmd, cb));
-		}
-		else {
-			iter->second = cb;
-		}
-		int c = this->_core->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32 {
-			int c1 = bufferevent_write(this->_bev, p->buf, p->size);
-			return c1;
-		});
-		return c;
+	if (!this->_connected) {
+		LOGFMTD("network is not connected.");
+		return -1;
 	}
-	else
-	{
-		LOGD("network is not connected.");
+		
+	std::unordered_map<lw_int32, SocketRecvCallback>::iterator iter = this->_cmd_event_map.find(recvcmd);
+	if (iter == _cmd_event_map.end()) {
+		this->_cmd_event_map.insert(std::pair<lw_int32, SocketRecvCallback>(recvcmd, cb));
 	}
-	return -1;
+	else {
+		iter->second = cb;
+	}
+	int c = this->_iobuffer->send(cmd, object, objectSize, [this](NET_MESSAGE * p) -> lw_int32 {
+		int c1 = bufferevent_write(this->_bev, p->buf, p->size);
+		if (c1 != 0) {
+			LOGFMTD("error occurred. [%d]", c1);
+		}
+		return c1;
+	});
+	return c;
 }
 
 void SocketSession::__onWrite() {
-
+	struct evbuffer *output = bufferevent_get_output(this->_bev);
+	size_t output_len = evbuffer_get_length(output);
+	if (output_len > 0) {
+		LOGFMTD("SocketSession::__onRead. output_len: %d", output_len);
+// 		std::unique_ptr<lw_char8[]> recv_buf(new lw_char8[output_len]);
+// 		while (output_len > 0) {
+// 			size_t write_len = bufferevent_read(this->_bev, recv_buf.get(), output_len);
+// 			if (write_len > 0) {
+// 				int c1 = bufferevent_write(this->_bev, recv_buf.get(), write_len);
+// 				if (c1 != 0) {
+// 					LOGFMTD("error occurred. [%d]", c1);
+// 				}
+// 			}
+// 			else {
+// 				LOGFMTD("SocketSession::__onRead. read_len: %d", write_len);
+// 			}
+// 			output_len -= write_len;
+// 		}
+	} 
+	else {
+	
+	}
 }
 
 void SocketSession::__onRead() {
@@ -175,13 +219,14 @@ void SocketSession::__onRead() {
 	std::unique_ptr<lw_char8[]> recv_buf(new lw_char8[input_len]);
 	while (input_len > 0) {
 		size_t recv_len = bufferevent_read(this->_bev, recv_buf.get(), input_len); 
-		if (recv_len > 0) {
-			if (this->_core->parse(recv_buf.get(), recv_len, CoreSocket::__on_socket_data_parse_cb, this) == 0) {
-
+		if (recv_len > 0 && recv_len == input_len) {
+			int c = this->_iobuffer->parse(recv_buf.get(), recv_len, CoreSocket::__on_socket_data_parse_cb, this);
+			if (c != 0) {
+				LOGFMTD("parse faild. [%d]", c);
 			}
 		}
 		else {
-			LOGFMTD("SocketSession::__onRead. read_len: %d", recv_len);
+			LOGFMTD("SocketSession::__onRead recv_len: %d", recv_len);
 		}
 		input_len -= recv_len;
 	}

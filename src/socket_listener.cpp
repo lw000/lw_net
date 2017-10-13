@@ -34,18 +34,14 @@ SocketListener::SocketListener() : _listener(nullptr)
 
 SocketListener::~SocketListener()
 {
-	if (this->_config != nullptr) {
-		SAFE_DELETE(this->_config);
-	}
+
 }
 
 bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 {	
 	this->_config = config;
-	struct evconnlistener *listener = nullptr;
 	struct sockaddr_in sin;
 	sin.sin_family = AF_INET;
-
 	std::string host = this->_config->getHost();
 	if (host.empty()) {
 		sin.sin_addr.s_addr = htonl(0);	//绑定0.0.0.0地址
@@ -53,19 +49,18 @@ bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 	else {
 		sin.sin_addr.s_addr = inet_addr(host.c_str());	//绑定地址
 	}
-	
-	sin.sin_addr.s_addr = htonl(0);	//绑定0.0.0.0地址
 
 	int port = this->_config->getPort();
-	if (port != 0) {
+	if (port > 0) {
 		sin.sin_port = htons(port);
 	}
 	else {
 		sin.sin_port = htons(0);
 	}
+
 	//inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr.s_addr);
 	this->_listener = evconnlistener_new_bind(processor->getBase(), ::__listener_cb, this,
-		LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE, -1, (struct sockaddr*)&sin, sizeof(sin));
+		LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_THREADSAFE, -1, (struct sockaddr*)&sin, sizeof(sin));
 
 	if (this->_listener != nullptr)
 	{
@@ -78,6 +73,10 @@ bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 
 void SocketListener::destroy()
 {
+	if (this->_config != nullptr) {
+		SAFE_DELETE(this->_config);
+	}
+
 	if (this->_listener != nullptr)
 	{
 		evconnlistener_free(this->_listener);
@@ -87,12 +86,16 @@ void SocketListener::destroy()
 
 void SocketListener::set_listener_cb(std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> func)
 {
-	this->listener_func = func;
+	if (func != nullptr) {
+		this->listener_func = func;
+	}
 }
 
 void SocketListener::set_listener_errorcb(std::function<void(void * userdata, int er)> func)
 {
-	this->listener_error_func = func;
+	if (func != nullptr) {
+		this->listener_error_func = func;
+	}
 }
 
 std::string SocketListener::debug()

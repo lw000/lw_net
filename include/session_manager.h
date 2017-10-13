@@ -2,21 +2,12 @@
 #define __SessionManager_h__
 
 #include <list>
-//#include <mutex>
 #include "lock.h"
 
 class SocketSession;
 
 class SessionManager
 {
-private:
-	//std::mutex _m;
-	lw_fast_lock _m;
-
-private:
-	std::list<SocketSession*> _live;
-	std::list<SocketSession*> _die;
-
 public:
 	SessionManager();
 	~SessionManager();
@@ -27,7 +18,13 @@ public:
 
 public:
 	void restoreCache();
+
+private:
+	lw_fast_lock _m;
+	std::list<SocketSession*> _live;
+	std::list<SocketSession*> _die;
 };
+
 //
 //template<class T>
 //class ManagerT

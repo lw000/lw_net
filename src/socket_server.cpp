@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #endif // _WIN32
 
-#include "net_core.h"
+#include "net_iobuffer.h"
 #include "common_marco.h"
 #include "socket_session.h"
 #include "socket_timer.h"
@@ -33,12 +33,12 @@ SocketServer::SocketServer() : _onFunc(nullptr)
 {
 	this->_processor = new SocketProcessor();
 	this->_listener = new SocketListener;
-	this->_core = new NetCore;
+	this->_iobuffer = new NetIOBuffer;
 }
 
 SocketServer::~SocketServer()
 {
-	SAFE_DELETE(this->_core);
+	SAFE_DELETE(this->_iobuffer);
 	SAFE_DELETE(this->_listener);
 	SAFE_DELETE(this->_processor);
 }
@@ -96,17 +96,16 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 	this->_onFunc = func;
 
 	_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-		SocketConfig* config = new SocketConfig;
-		SocketSession* pSession = new SocketSession(this->_handler, this->_core, config);
-		int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd, EV_READ | EV_WRITE);
+		SocketSession* pSession = new SocketSession(this->_handler, this->_iobuffer, new SocketConfig);
+		int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd);
 		if (r == 0)
 		{
 			char hostBuf[NI_MAXHOST];
 			char portBuf[64];
 			getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
 
-			config->setHost(hostBuf);
-			config->setPort(std::stoi(portBuf));
+			pSession->getConfig()->setHost(hostBuf);
+			pSession->getConfig()->setPort(std::stoi(portBuf));
 
 			this->_handler->onListener(pSession);
 		}

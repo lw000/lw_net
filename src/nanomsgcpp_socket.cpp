@@ -1,7 +1,7 @@
 #include "nanomsgcpp_socket.h"
 
 #include "common_type.h"
-#include "net_core.h"
+#include "net_iobuffer.h"
 
 #include <nn.h>
 
@@ -18,11 +18,11 @@ public:
 
 NanomsgcppSocket::NanomsgcppSocket() {
 	this->_fd = -1;
-	_core = new NetCore;
+	_iobuffer = new NetIOBuffer;
 }
 
 NanomsgcppSocket::~NanomsgcppSocket() {
-	delete _core;
+	delete _iobuffer;
 	close();
 }
 
@@ -93,14 +93,14 @@ int NanomsgcppSocket::recv() {
 	char *buf = NULL;
 	lw_int32 c = nn_recv(this->_fd, &buf, NN_MSG, 0);
 	if (c > 0) {
-		_core->parse(buf, c, CoreSocket::__on_socket_recv, this);
+		_iobuffer->parse(buf, c, CoreSocket::__on_socket_recv, this);
 		nn_freemsg(buf);
 	}
 	return c;
 }
 
 int NanomsgcppSocket::send(int cmd, void* object, int objectSize) {
-	int c = _core->send(cmd, object, objectSize, [this](LW_NET_MESSAGE * p) -> lw_int32
+	int c = _iobuffer->send(cmd, object, objectSize, [this](NET_MESSAGE * p) -> lw_int32
 	{
 		int c = nn_send(this->_fd, p->buf, p->size, 0);
 		return c;

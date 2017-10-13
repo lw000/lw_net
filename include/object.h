@@ -4,9 +4,20 @@
 #include <string>
 #include <iosfwd>
 
+class noncopyable
+{
+protected:
+	noncopyable() {}
+	~noncopyable() {}
+
+private:  // emphasize the following members are private  
+	noncopyable(const noncopyable&);
+	const noncopyable& operator=(const noncopyable&);
+};
+
 class Object
 {
-	friend std::ostream& operator<<(std::ostream & os, Object & o);
+// 	friend std::ostream& operator<<(std::ostream & os, Object & o);
 
 public:
 	Object();

@@ -16,7 +16,8 @@ public:
 
 public:
 	bool create(bool enableServer);
-
+	void destroy();
+	
 public:
 	struct event_base* getBase();
 

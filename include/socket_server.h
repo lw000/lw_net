@@ -12,7 +12,7 @@
 #include <functional>
 
 class Timer;
-class NetCore;
+class NetIOBuffer;
 class SocketConfig;
 class SocketSession;
 class SocketProcessor;
@@ -44,7 +44,7 @@ protected:
 	virtual int onEnd() override;
 
 private:
-	NetCore* _core;
+	NetIOBuffer* _iobuffer;
 	SocketListener* _listener;
 	SocketProcessor* _processor;
 

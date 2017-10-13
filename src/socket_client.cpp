@@ -5,7 +5,7 @@
 
 #include "event2/event.h"
 
-#include "net_core.h"
+#include "net_iobuffer.h"
 #include "socket_config.h"
 #include "socket_hanlder.h"
 #include "socket_processor.h"
@@ -16,20 +16,18 @@
 #include "log4z.h"
 using namespace zsummer::log4z;
 
-using namespace lwstar;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SocketClient::SocketClient() : _processor(nullptr), _session(nullptr)
 {
-	this->_core = new NetCore;
+	this->_iobuffer = new NetIOBuffer;
 	this->_processor = new SocketProcessor();
 }
 
 SocketClient::~SocketClient()
 {
 	SAFE_DELETE(this->_session);
-	SAFE_DELETE(this->_core);
+	SAFE_DELETE(this->_iobuffer);
 	SAFE_DELETE(this->_processor);
 }
 
@@ -37,7 +35,7 @@ bool SocketClient::create(AbstractSocketClientHandler* handler, SocketConfig* co
 {						
 	bool ret = this->_processor->create(false);
 	if (ret) {
-		this->_session = new SocketSession(handler, this->_core, config);
+		this->_session = new SocketSession(handler, this->_iobuffer, config);
 		this->_session->connectedHandler = this->connectedHandler;
 		this->_session->disConnectHandler = this->disConnectHandler;
 		this->_session->timeoutHandler = this->timeoutHandler;
@@ -52,6 +50,11 @@ void SocketClient::destroy()
 	if (this->_session != nullptr)
 	{
 		this->_session->destroy();
+	}
+
+	if (this->_processor != nullptr)
+	{
+		this->_processor->destroy();
 	}
 }
 
@@ -90,7 +93,7 @@ int SocketClient::onStart() {
 }
 
 int SocketClient::onRun() {
-	int r = this->_session->create(SESSION_TYPE::Client, this->_processor, -1, EV_READ | EV_PERSIST);
+	int r = this->_session->create(SESSION_TYPE::Client, this->_processor);
 	if (r == 0)
 	{
 		this->_processor->dispatch();
