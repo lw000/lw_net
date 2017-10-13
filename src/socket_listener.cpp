@@ -12,6 +12,10 @@
 
 #include <type_traits>
 
+#ifndef _WIN32
+#include <arpa/inet.h>
+#endif
+
 static void __listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int, void *);
 static void __listener_error_cb(struct evconnlistener *, void *);
 
@@ -44,10 +48,10 @@ bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 	sin.sin_family = AF_INET;
 	std::string host = this->_config->getHost();
 	if (host.empty()) {
-		sin.sin_addr.s_addr = htonl(0);	//绑定0.0.0.0地址
+		sin.sin_addr.s_addr = htonl(0);
 	}
 	else {
-		sin.sin_addr.s_addr = inet_addr(host.c_str());	//绑定地址
+		sin.sin_addr.s_addr = inet_addr(host.c_str());
 	}
 
 	int port = this->_config->getPort();

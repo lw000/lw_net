@@ -11,6 +11,9 @@ struct event_base;
 class SocketProcessor : public Object
 {
 public:
+	static void use_threads();
+
+public:
 	SocketProcessor();
 	virtual ~SocketProcessor();
 
@@ -31,8 +34,6 @@ public:
 public:
 	virtual std::string debug() override;
 
-private:
-	void use_threads();
 
 private:
 	struct event_base* _base;

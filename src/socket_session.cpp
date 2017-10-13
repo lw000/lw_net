@@ -69,7 +69,7 @@ SocketSession::~SocketSession() {
 
 int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd) {
 
-	if (this->_processor == nullptr) {
+	if (processor == nullptr) {
 		LOGD("this->_processor is nullptr");
 		return -1;
 	}
@@ -94,10 +94,10 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 
 		bufferevent_setcb(this->_bev, CoreSocket::__read_cb, CoreSocket::__write_cb/*NULL*/, CoreSocket::__event_cb, this);
 		bufferevent_enable(this->_bev, EV_READ | EV_WRITE | EV_PERSIST);
-		int nRecvBuf = 32 * 1024;//ÉèÖÃÎª32K
-		int c1 = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
-		int nSendBuf = 32 * 1024;//ÉèÖÃÎª32K
-		int c2 = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
+//		int nRecvBuf = 32 * 1024;//ï¿½ï¿½ï¿½ï¿½Îª32K
+//		int c1 = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
+//		int nSendBuf = 32 * 1024;//ï¿½ï¿½ï¿½ï¿½Îª32K
+//		int c2 = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
 		this->_connected = true;
 	} break;
 	case SESSION_TYPE::Client: {
@@ -113,11 +113,11 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 			bufferevent_setcb(this->_bev, CoreSocket::__read_cb, /*CoreSocket::__write_cb*/NULL, CoreSocket::__event_cb, this);
 			bufferevent_enable(this->_bev, EV_READ | EV_PERSIST);
 			
-			evutil_socket_t nfd = bufferevent_getfd(this->_bev);
-			int nRecvBuf = 32 * 1024;//ÉèÖÃÎª32K
-			int c1 = setsockopt(nfd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
-			int nSendBuf = 32 * 1024;//ÉèÖÃÎª32K
-			int c2 = setsockopt(nfd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
+//			evutil_socket_t nfd = bufferevent_getfd(this->_bev);
+//			int nRecvBuf = 32 * 1024;//ï¿½ï¿½ï¿½ï¿½Îª32K
+//			int c1 = setsockopt(nfd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
+//			int nSendBuf = 32 * 1024;//ï¿½ï¿½ï¿½ï¿½Îª32K
+//			int c2 = setsockopt(nfd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
 		}
 		else {
 			this->_connected = false;

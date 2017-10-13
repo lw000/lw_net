@@ -33,7 +33,6 @@ bool SocketProcessor::create(bool enableServer) {
 	
 	if (this->_base == nullptr)
 	{
-		this->use_threads();
 
 #ifdef WIN32
 		if (enableServer) {
