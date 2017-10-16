@@ -12,6 +12,8 @@ struct evhttp;
 struct evhttp_request;
 struct HTTP_METHOD_SIGNATURE;
 class HttpServer;
+class SocketProcessor;
+class SocketConfig;
 
 void lw_http_send_reply(struct evhttp_request * req, const char* what);
 
@@ -25,10 +27,10 @@ class HttpServer : public Threadable
 
 public:
 	HttpServer();
-	~HttpServer();
+	virtual ~HttpServer();
 
 public:
-	lw_int32 create(const char* addr, lw_uint32 port);
+	lw_int32 create(SocketConfig* config);
 	void listen();
 	void gen(std::function<void (struct evhttp_request *)> cb);
 	void get(const char * path, std::function<void(struct evhttp_request *)> cb);
@@ -42,12 +44,12 @@ protected:
 	void __doStore(const char * path, lw_int32 cmd, std::function<void(struct evhttp_request *)> cb);
 
 private:
+	SocketProcessor* _processor;
+	SocketConfig* _config;
 	struct event_base* _base;
 	struct evhttp *_htpServ;
 
 private:
-	std::string _addr;
-	lw_uint32 port;
 	MAP_METHOD _method;
 	std::function<void(struct evhttp_request *)> _gen_cb;
 };

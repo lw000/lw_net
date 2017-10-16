@@ -38,6 +38,9 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
+#include "socket_processor.h"
+#include "socket_config.h"
+
 #include "utils.h"
 
 struct HTTP_METHOD_SIGNATURE
@@ -124,30 +127,43 @@ public:
 
 HttpServer::HttpServer()
 {
-	this->port = 0;
+// 	this->port = 0;
 	this->_base = nullptr;
 	this->_htpServ = nullptr;
+
+	_processor = new SocketProcessor;
 }
 
 HttpServer::~HttpServer()
 {
-
+	if (_processor != nullptr) {
+		delete _processor;
+	}
 }
 
-lw_int32 HttpServer::create(const char* addr, lw_uint32 port)
+lw_int32 HttpServer::create(SocketConfig* config)
 {
-	this->_addr = addr;
-	this->port = port;
-
-	struct evhttp_bound_socket *handle = NULL;
-
-	struct event_config *cfg = event_config_new();
-	//event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
-	if (cfg)
-	{
-		this->_base = event_base_new_with_config(cfg);
-		event_config_free(cfg);
+	if (config == nullptr) {
+		return -1;
 	}
+	this->_config = config;
+// 	this->_addr = addr;
+// 	this->port = port;
+
+// 	bool r = _processor->create(true);
+// 	{
+// 		this->_base = _processor->getBase();
+// 	}
+
+// 	struct event_config *cfg = event_config_new();
+// 	//event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
+// 	if (cfg)
+// 	{
+// 		this->_base = event_base_new_with_config(cfg);
+// 		event_config_free(cfg);
+// 	}
+
+	this->_base = event_base_new();
 
 	this->_htpServ = evhttp_new(this->_base);
 	if (!this->_htpServ)
@@ -157,10 +173,10 @@ lw_int32 HttpServer::create(const char* addr, lw_uint32 port)
 		return -1;
 	}
 
-	handle = evhttp_bind_socket_with_handle(this->_htpServ, this->_addr.c_str(), port);
+	struct evhttp_bound_socket *handle = evhttp_bind_socket_with_handle(this->_htpServ, this->_config->getHost().c_str(), this->_config->getPort());
 	if (!handle)
 	{
-		fprintf(stderr, "couldn't?bind?to?port?%d.?exiting.\n", (int)port);
+		fprintf(stderr, "couldn't?bind?to?port?%d.?exiting.\n", (int)this->_config->getPort());
 		evhttp_free(this->_htpServ);
 		event_base_free(this->_base);
 		return -1;
@@ -222,8 +238,6 @@ lw_int32 HttpServer::create(const char* addr, lw_uint32 port)
 
 void HttpServer::listen()
 {
-// 	std::thread t(std::bind(&HttpServer::__run, this));
-// 	t.detach();
 	this->start();
 }
 
@@ -270,17 +284,18 @@ int HttpServer::onStart() {
 }
 
 int HttpServer::onRun() {
+
 	int ret = event_base_dispatch(_base);
+	
+//	int ret = _processor->dispatch();
 
-	evhttp_free(this->_htpServ);
-
-	event_base_free(this->_base);
-
-	this->_htpServ = NULL;
-	this->_base = NULL;
 	return 0;
 }
 
 int HttpServer::onEnd() {
+	evhttp_free(this->_htpServ);
+	event_base_free(this->_base);
+	this->_htpServ = NULL;
+	this->_base = NULL;
 	return 0;
 }

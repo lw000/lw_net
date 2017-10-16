@@ -256,7 +256,6 @@ void TimerWin32::_timer_cb(TIMER_ITEM* timer)
 
 #endif
 
-
 class TimerLinux : public Object, public ITimer
 {
 public:
@@ -299,7 +298,6 @@ TimerLinux::~TimerLinux()
 int TimerLinux::create(SocketProcessor* processor)
 {
 	this->_processor = processor;
-
 	return true;
 }
 
@@ -349,7 +347,7 @@ int TimerLinux::start(int tid, int tms, TIMER_CALLBACK func)
 	/* 定时器只执行一次，每次需要添加*/
 	//r = event_assign(ptimer->ev, this->_base, -1, 0, TimerCore::__timer_cb__, ptimer);
 
-	/* 定时器只执行无限次执行*/
+	/* 定时器无限次执行*/
 	r = event_assign(ptimer->ev, this->_processor->getBase(), -1, EV_PERSIST, TimerCore::__timer_cb__, ptimer);
 
 	struct timeval tv;
@@ -403,7 +401,6 @@ void TimerLinux::_timer_cb(TIMER_ITEM* timer)
 		this->kill(ptimer->tid);
 	}
 }
-
 
 Timer::Timer() : _timer(nullptr)
 {
