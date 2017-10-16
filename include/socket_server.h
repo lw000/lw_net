@@ -20,11 +20,23 @@ class SocketListener;
 class SocketServer : public Object, public Threadable
 {
 public:
+	SocketEventHandler connectedHandler;
+	SocketEventHandler disConnectHandler;
+	SocketEventHandler timeoutHandler;
+	SocketEventHandler errorHandler;
+
+public:
+	SocketParseHandler parseHandler;
+
+public:
+	SocketEventHandler listenHandler;
+
+public:
 	SocketServer();
 	virtual ~SocketServer();
 
 public:
-	bool create(AbstractSocketServerHandler* handler, SocketConfig* config);
+	bool create(/*AbstractSocketServerHandler* handler, */SocketConfig* config);
 	void destroy();
 
 public:
@@ -48,7 +60,7 @@ private:
 
 private:
 	std::function<void(lw_int32 what)> _onFunc;
-	AbstractSocketServerHandler* _handler;
+	//AbstractSocketServerHandler* _handler;
 };
 
 #endif // !__SocketServer_H__ 

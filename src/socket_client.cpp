@@ -29,15 +29,16 @@ SocketClient::~SocketClient()
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketClient::create(AbstractSocketClientHandler* handler, SocketConfig* config)
+bool SocketClient::create(/*AbstractSocketClientHandler* handler, */SocketConfig* config)
 {						
 	bool ret = this->_processor->create(false);
 	if (ret) {
-		this->_session = new SocketSession(handler, config);
+		this->_session = new SocketSession(/*handler, */config);
 		this->_session->connectedHandler = this->connectedHandler;
 		this->_session->disConnectHandler = this->disConnectHandler;
 		this->_session->timeoutHandler = this->timeoutHandler;
 		this->_session->errorHandler = this->errorHandler;
+		this->_session->parseHandler = this->parseHandler;
 	}
 
 	return true;
@@ -100,12 +101,11 @@ int SocketClient::onRun() {
 		LOGFMTD("SocketClient::onRun() r = %d", r);
 	}
 
-	this->destroy();
-
 	return 0;
 }
 
 int SocketClient::onEnd() {
-	
+	this->destroy();
+
 	return 0;
 }

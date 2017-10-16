@@ -32,9 +32,10 @@ public:
 	SocketEventHandler disConnectHandler;
 	SocketEventHandler timeoutHandler;
 	SocketEventHandler errorHandler;
+	SocketParseHandler parseHandler;
 
 public:
-	SocketSession(AbstractSocketSessionHanlder* handler, SocketConfig* config);
+	SocketSession(/*AbstractSocketSessionHanlder* handler, */SocketConfig* config);
 	virtual ~SocketSession();
 
 public:
@@ -72,7 +73,7 @@ private:
 	NetIOBuffer* _iobuffer;
 	SocketProcessor* _processor;
 	struct bufferevent* _bev;
-	AbstractSocketSessionHanlder * _handler;
+// 	AbstractSocketSessionHanlder * _handler;
 };
 
 

@@ -20,11 +20,14 @@ public:
 	SocketEventHandler errorHandler;
 
 public:
+	SocketParseHandler parseHandler;
+
+public:
 	SocketClient();
 	virtual ~SocketClient();
 
 public:
-	bool create(AbstractSocketClientHandler* handler, SocketConfig* config);
+	bool create(/*AbstractSocketClientHandler* handler, */SocketConfig* config);
 	void destroy();
 
 public:

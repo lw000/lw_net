@@ -51,9 +51,9 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, SocketConfig* config) {
+SocketSession::SocketSession(/*AbstractSocketSessionHanlder* handler, */SocketConfig* config) {
 	this->_iobuffer = new NetIOBuffer;
-	this->_handler = handler;
+// 	this->_handler = handler;
 	this->_config = config;
 	this->_connected = false;
 	this->_bev = nullptr;
@@ -188,6 +188,7 @@ lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize
 		}
 		return c1;
 	});
+
 	return c;
 }
 
@@ -248,7 +249,11 @@ void SocketSession::__onParse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
 	}
 
 	if (goon) {
-		this->_handler->onSocketParse(this, cmd, buf, bufsize);
+		if (this->parseHandler != nullptr) {
+			this->parseHandler(this, cmd, buf, bufsize);
+		}
+
+// 		this->_handler->onSocketParse(this, cmd, buf, bufsize);
 	}
 }
 
@@ -258,7 +263,7 @@ void SocketSession::__onEvent(short ev) {
 		if (this->connectedHandler != nullptr) {
 			this->connectedHandler(this);
 		}
-		this->_handler->onSocketConnected(this);
+// 		this->_handler->onSocketConnected(this);
 		return;
 	}
 
@@ -266,31 +271,36 @@ void SocketSession::__onEvent(short ev) {
 		if (this->errorHandler != nullptr) {
 			this->errorHandler(this);
 		}
-		this->_handler->onSocketError(this);
+		
+// 		this->_handler->onSocketError(this);
 	}
 	else if (ev & BEV_EVENT_WRITING) {
 		if (this->errorHandler != nullptr) {
 			this->errorHandler(this);
 		}
-		this->_handler->onSocketError(this);
+		
+// 		this->_handler->onSocketError(this);
 	}
 	else if (ev & BEV_EVENT_EOF) {
 		if (this->disConnectHandler != nullptr) {
 			this->disConnectHandler(this);
 		}
-		this->_handler->onSocketDisConnect(this);
+		
+// 		this->_handler->onSocketDisConnect(this);
 	}
 	else if (ev & BEV_EVENT_TIMEOUT) {
 		if (this->timeoutHandler != nullptr) {
 			this->timeoutHandler(this);
 		}
-		this->_handler->onSocketTimeout(this);
+		
+// 		this->_handler->onSocketTimeout(this);
 	}
 	else if (ev & BEV_EVENT_ERROR) {
 		if (this->errorHandler != nullptr) {
 			this->errorHandler(this);
 		}
-		this->_handler->onSocketError(this);
+		
+// 		this->_handler->onSocketError(this);
 	}
 
 	this->_connected = false;

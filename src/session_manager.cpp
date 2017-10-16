@@ -1,5 +1,6 @@
 #include "session_manager.h"
 #include "socket_session.h"
+#include "socket_config.h"
 
 SessionManager::SessionManager()
 {
@@ -52,7 +53,7 @@ SocketSession* SessionManager::add(const SocketSession* session)
 
 			if (pSession == NULL)
 			{
-				pSession = new SocketSession(nullptr, nullptr);
+				pSession = new SocketSession(/*nullptr, */new SocketConfig("", -1));
 			}
 
 			*pSession = *session;
