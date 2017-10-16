@@ -34,7 +34,7 @@ public:
 	SocketEventHandler errorHandler;
 
 public:
-	SocketSession(AbstractSocketSessionHanlder* handler, NetIOBuffer * core, SocketConfig* config);
+	SocketSession(AbstractSocketSessionHanlder* handler, SocketConfig* config);
 	virtual ~SocketSession();
 
 public:

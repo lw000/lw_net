@@ -52,7 +52,7 @@ SocketSession* SessionManager::add(const SocketSession* session)
 
 			if (pSession == NULL)
 			{
-				pSession = new SocketSession(nullptr, nullptr, nullptr);
+				pSession = new SocketSession(nullptr, nullptr);
 			}
 
 			*pSession = *session;

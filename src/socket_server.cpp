@@ -18,7 +18,6 @@
 #include <sys/socket.h>
 #endif // _WIN32
 
-#include "net_iobuffer.h"
 #include "common_marco.h"
 #include "socket_session.h"
 #include "socket_timer.h"
@@ -33,12 +32,10 @@ SocketServer::SocketServer() : _onFunc(nullptr)
 {
 	this->_processor = new SocketProcessor();
 	this->_listener = new SocketListener;
-	this->_iobuffer = new NetIOBuffer;
 }
 
 SocketServer::~SocketServer()
 {
-	SAFE_DELETE(this->_iobuffer);
 	SAFE_DELETE(this->_listener);
 	SAFE_DELETE(this->_processor);
 }
@@ -96,7 +93,7 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 	this->_onFunc = func;
 
 	_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-		SocketSession* pSession = new SocketSession(this->_handler, this->_iobuffer, new SocketConfig);
+		SocketSession* pSession = new SocketSession(this->_handler, new SocketConfig);
 		int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd);
 		if (r == 0)
 		{

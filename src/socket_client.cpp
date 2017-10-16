@@ -20,14 +20,12 @@ using namespace zsummer::log4z;
 
 SocketClient::SocketClient() : _processor(nullptr), _session(nullptr)
 {
-	this->_iobuffer = new NetIOBuffer;
 	this->_processor = new SocketProcessor();
 }
 
 SocketClient::~SocketClient()
 {
 	SAFE_DELETE(this->_session);
-	SAFE_DELETE(this->_iobuffer);
 	SAFE_DELETE(this->_processor);
 }
 
@@ -35,7 +33,7 @@ bool SocketClient::create(AbstractSocketClientHandler* handler, SocketConfig* co
 {						
 	bool ret = this->_processor->create(false);
 	if (ret) {
-		this->_session = new SocketSession(handler, this->_iobuffer, config);
+		this->_session = new SocketSession(handler, config);
 		this->_session->connectedHandler = this->connectedHandler;
 		this->_session->disConnectHandler = this->disConnectHandler;
 		this->_session->timeoutHandler = this->timeoutHandler;

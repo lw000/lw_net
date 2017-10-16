@@ -52,8 +52,8 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetIOBuffer * iobuffer, SocketConfig* config) {
-	this->_iobuffer = iobuffer;
+SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, SocketConfig* config) {
+	this->_iobuffer = new NetIOBuffer;
 	this->_handler = handler;
 	this->_config = config;
 	this->_connected = false;
@@ -64,6 +64,10 @@ SocketSession::SocketSession(AbstractSocketSessionHanlder* handler, NetIOBuffer 
 SocketSession::~SocketSession() {
 	if (this->_config != nullptr) {
 		SAFE_DELETE(this->_config);
+	}
+
+	if (this->_iobuffer != nullptr) {
+		SAFE_DELETE(this->_iobuffer);
 	}
 }
 

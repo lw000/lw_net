@@ -12,7 +12,6 @@
 #include <functional>
 
 class Timer;
-class NetIOBuffer;
 class SocketConfig;
 class SocketSession;
 class SocketProcessor;
@@ -44,7 +43,6 @@ protected:
 	virtual int onEnd() override;
 
 private:
-	NetIOBuffer* _iobuffer;
 	SocketListener* _listener;
 	SocketProcessor* _processor;
 
