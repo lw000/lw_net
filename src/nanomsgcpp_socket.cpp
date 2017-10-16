@@ -7,7 +7,7 @@
 
 #include <log4z.h>
 
-class CoreSocket
+class SessionCore
 {
 public:
 	static void __on_socket_recv(lw_int32 cmd, char* buf, lw_int32 bufsize, void* userdata) {
@@ -93,7 +93,7 @@ int NanomsgcppSocket::recv() {
 	char *buf = NULL;
 	lw_int32 c = nn_recv(this->_fd, &buf, NN_MSG, 0);
 	if (c > 0) {
-		_iobuffer->parse(buf, c, CoreSocket::__on_socket_recv, this);
+		_iobuffer->parse(buf, c, SessionCore::__on_socket_recv, this);
 		nn_freemsg(buf);
 	}
 	return c;

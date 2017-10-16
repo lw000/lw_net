@@ -9,7 +9,7 @@ class NetIOBuffer;
 
 class NanomsgcppSocket
 {
-	friend class CoreSocket;
+	friend class SessionCore;
 
 public:
 	NanomsgcppSocket();

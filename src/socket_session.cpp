@@ -19,10 +19,9 @@
 #include "log4z.h"
 #include <memory>
 
-
 #define RECV_BUFFER_SIZE	16*2
 
-class CoreSocket {
+class SessionCore {
 public:
 	static void __read_cb(struct bufferevent* bev, void* userdata) {
 		SocketSession *session = (SocketSession*)userdata;
@@ -96,11 +95,11 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 // 		bufferevent_set_timeouts(this->_bev, &tv_read, &tv_write);		
 // 		bufferevent_enable(this->_bev, BEV_OPT_THREADSAFE);
 
-		bufferevent_setcb(this->_bev, CoreSocket::__read_cb, CoreSocket::__write_cb/*NULL*/, CoreSocket::__event_cb, this);
+		bufferevent_setcb(this->_bev, SessionCore::__read_cb, SessionCore::__write_cb/*NULL*/, SessionCore::__event_cb, this);
 		bufferevent_enable(this->_bev, EV_READ | EV_WRITE | EV_PERSIST);
-//		int nRecvBuf = 32 * 1024;//����Ϊ32K
+//		int nRecvBuf = 32 * 1024;
 //		int c1 = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
-//		int nSendBuf = 32 * 1024;//����Ϊ32K
+//		int nSendBuf = 32 * 1024;
 //		int c2 = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
 		this->_connected = true;
 	} break;
@@ -114,13 +113,13 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		int con = bufferevent_socket_connect(this->_bev, (struct sockaddr *)&saddr, sizeof(saddr));
 		if (con >= 0) {
-			bufferevent_setcb(this->_bev, CoreSocket::__read_cb, /*CoreSocket::__write_cb*/NULL, CoreSocket::__event_cb, this);
+			bufferevent_setcb(this->_bev, SessionCore::__read_cb, /*CoreSocket::__write_cb*/NULL, SessionCore::__event_cb, this);
 			bufferevent_enable(this->_bev, EV_READ | EV_PERSIST);
 			
 //			evutil_socket_t nfd = bufferevent_getfd(this->_bev);
-//			int nRecvBuf = 32 * 1024;//����Ϊ32K
+//			int nRecvBuf = 32 * 1024;
 //			int c1 = setsockopt(nfd, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
-//			int nSendBuf = 32 * 1024;//����Ϊ32K
+//			int nSendBuf = 32 * 1024;
 //			int c2 = setsockopt(nfd, SOL_SOCKET, SO_SNDBUF, (const char*)&nSendBuf, sizeof(int));
 		}
 		else {
@@ -130,6 +129,7 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 	default:
 		break;
 	}
+
 	return 0;
 }
 
@@ -224,7 +224,7 @@ void SocketSession::__onRead() {
 	while (input_len > 0) {
 		size_t recv_len = bufferevent_read(this->_bev, recv_buf.get(), input_len); 
 		if (recv_len > 0 && recv_len == input_len) {
-			int c = this->_iobuffer->parse(recv_buf.get(), recv_len, CoreSocket::__on_socket_data_parse_cb, this);
+			int c = this->_iobuffer->parse(recv_buf.get(), recv_len, SessionCore::__on_socket_data_parse_cb, this);
 			if (c != 0) {
 				LOGFMTD("parse faild. [%d]", c);
 			}

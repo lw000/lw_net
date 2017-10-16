@@ -25,7 +25,7 @@ enum SESSION_TYPE
 
 class SocketSession : public Object
 {
-	friend class CoreSocket;
+	friend class SessionCore;
 
 public:
 	SocketEventHandler connectedHandler;
