@@ -38,13 +38,9 @@ public:
 		return this->_port;
 	}
 
-	bool connected() {
-		return this->_connected;
-	}
-
 	void reset() {
 		this->_port = 0;
-		this->_connected = false;
+		_host.clear();
 	}
 
 public:
@@ -55,7 +51,6 @@ public:
 private:
 	std::string _host;
 	int _port;
-	bool _connected;
 };
 
 #endif // !__socket_config_h__

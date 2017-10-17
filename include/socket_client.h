@@ -36,8 +36,8 @@ public:
 	int close();
 
 public:
-	void startTimer(int tid, unsigned int tms, TimerCallback func);
-	void killTimer(int tid);
+	void addTimer(int tid, unsigned int tms, TimerCallback func);
+	void removeTimer(int tid);
 
 public:
 	SocketSession* getSession();

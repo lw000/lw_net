@@ -16,22 +16,22 @@
 #include <arpa/inet.h>
 #endif
 
-static void __listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int, void *);
-static void __listener_error_cb(struct evconnlistener *, void *);
+class ListenerCore {
+public:
+	static void __listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen, void *userdata)
+	{
+		SocketListener * server = (SocketListener*)userdata;
+		server->__listener_cb(listener, fd, sa, socklen);
+	}
 
-static void __listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen, void *userdata)
-{
-	SocketListener * server = (SocketListener*)userdata;
-	server->listener_cb(listener, fd, sa, socklen);
-}
+	static void __listener_error_cb(struct evconnlistener * listener, void * userdata)
+	{
+		SocketListener * server = (SocketListener*)userdata;
+		server->__listener_error_cb(listener);
+	}
+};
 
-static void __listener_error_cb(struct evconnlistener * listener, void * userdata)
-{
-	SocketListener * server = (SocketListener*)userdata;
-	server->listener_error_cb(listener);
-}
-
-SocketListener::SocketListener() : _listener(nullptr)
+SocketListener::SocketListener() : _listener(nullptr), _config(nullptr)
 {
 
 }
@@ -63,12 +63,13 @@ bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 	}
 
 	//inet_pton(AF_INET, "127.0.0.1", &sin.sin_addr.s_addr);
-	this->_listener = evconnlistener_new_bind(processor->getBase(), ::__listener_cb, this,
+
+	this->_listener = evconnlistener_new_bind(processor->getBase(), ListenerCore::__listener_cb, this,
 		LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_THREADSAFE, -1, (struct sockaddr*)&sin, sizeof(sin));
 
 	if (this->_listener != nullptr)
 	{
-		evconnlistener_set_error_cb(this->_listener, __listener_error_cb);
+		evconnlistener_set_error_cb(this->_listener, ListenerCore::__listener_error_cb);
 		return true;
 	}
 
@@ -88,17 +89,17 @@ void SocketListener::destroy()
 	}
 }
 
-void SocketListener::set_listener_cb(std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> func)
+void SocketListener::listenerCB(std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> func)
 {
 	if (func != nullptr) {
-		this->listener_func = func;
+		this->_on_listener_func = func;
 	}
 }
 
-void SocketListener::set_listener_errorcb(std::function<void(void * userdata, int er)> func)
+void SocketListener::listenerErrorCB(std::function<void(void * userdata, int er)> func)
 {
 	if (func != nullptr) {
-		this->listener_error_func = func;
+		this->_on_listener_error_func = func;
 	}
 }
 
@@ -107,20 +108,20 @@ std::string SocketListener::debug()
 	return std::string("SocketListener");
 }
 
-void SocketListener::listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen)
+void SocketListener::__listener_cb(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *sa, int socklen)
 {
 	struct event_base *base = evconnlistener_get_base(listener);
 
-	if (this->listener_func != nullptr) {
-		this->listener_func(fd, sa, socklen);
+	if (this->_on_listener_func != nullptr) {
+		this->_on_listener_func(fd, sa, socklen);
 	}
 }
 
-void SocketListener::listener_error_cb(struct evconnlistener * listener)
+void SocketListener::__listener_error_cb(struct evconnlistener * listener)
 {
 	struct event_base *base = evconnlistener_get_base(listener);
 	int err = EVUTIL_SOCKET_ERROR();
-	if (this->listener_error_func != nullptr) {
-		this->listener_error_func(nullptr, err);
+	if (this->_on_listener_error_func != nullptr) {
+		this->_on_listener_error_func(nullptr, err);
 	}
 }

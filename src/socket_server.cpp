@@ -26,16 +26,17 @@
 #include "socket_config.h"
 
 #include <log4z.h>
-using namespace zsummer::log4z;
 
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
-	this->_processor = new SocketProcessor();
+	this->_processor = new SocketProcessor;
 	this->_listener = new SocketListener;
+	this->_timer = new SocketTimer;
 }
 
 SocketServer::~SocketServer()
 {
+	SAFE_DELETE(this->_timer);
 	SAFE_DELETE(this->_listener);
 	SAFE_DELETE(this->_processor);
 }
@@ -44,9 +45,9 @@ bool SocketServer::create(SocketConfig* config)
 {
 	bool ret = this->_processor->create(true);
 	if (ret) {
-		ret = _listener->create(_processor, config);
+		ret = this->_listener->create(_processor, config);
 		if (ret) {
-
+			int c = this->_timer->create(_processor);
 		}
 	}
 	
@@ -61,12 +62,15 @@ void SocketServer::destroy()
 	}
 }
 
-int SocketServer::loopbreak()
-{
-	return this->_processor->loopbreak();
+void SocketServer::addTimer(int tid, unsigned int tms, TimerCallback func) {
+	int c = this->_timer->add(tid, tms, func);
 }
 
-int SocketServer::loopexit()
+void SocketServer::removeTimer(int tid) {
+	this->_timer->remove(tid);
+}
+
+int SocketServer::close()
 {
 	return this->_processor->loopexit();
 }
@@ -90,7 +94,7 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 
 	this->_onFunc = func;
 
-	_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
+	_listener->listenerCB([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
 		SocketSession* pSession = new SocketSession(new SocketConfig);
 		pSession->connectedHandler = this->connectedHandler;
 		pSession->disConnectHandler = this->disConnectHandler;
@@ -108,7 +112,6 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 			pSession->getConf()->setHost(hostBuf);
 			pSession->getConf()->setPort(std::stoi(portBuf));
 
-			//this->_handler->onListener(pSession);
 			if (this->listenHandler != nullptr) {
 				this->listenHandler(pSession);
 			}
@@ -121,7 +124,7 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 		}
 	});
 
-	_listener->set_listener_errorcb([this](void * userdata, int er) {
+	_listener->listenerErrorCB([this](void * userdata, int er) {
 		LOGFMTD("got an error %d (%s) on the listener. shutting down.\n", er, evutil_socket_error_to_string(er));
 		this->_processor->loopexit();
 	});

@@ -6,8 +6,10 @@
 #include <unordered_map>
 #include <event2/util.h>
 #include "socket_object.h"
-#include "Threadable.h"
 #include "socket_hanlder.h"
+#include "socket_timer.h"
+
+#include "Threadable.h"
 
 #include <functional>
 
@@ -43,8 +45,11 @@ public:
 	lw_int32 serv(std::function<void(lw_int32 what)> func);
 
 public:
-	int loopbreak();
-	int loopexit();
+	void addTimer(int tid, unsigned int tms, TimerCallback func);
+	void removeTimer(int tid);
+
+public:
+	int close();
 
 public:
 	virtual std::string debug() override;
@@ -55,6 +60,7 @@ protected:
 	virtual int onEnd() override;
 
 private:
+	SocketTimer* _timer;
 	SocketListener* _listener;
 	SocketProcessor* _processor;
 

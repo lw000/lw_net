@@ -13,14 +13,12 @@
 	#include <arpa/inet.h>
 #endif // WIN32
 
-//#include <thread>
-
 #include "socket_processor.h"
 #include "lock.h"
 
 struct TIMER_ITEM
 {
-	ITimer* owner;
+	ISocketTimer* owner;
 	unsigned int begin;
 	unsigned int end;
 
@@ -29,7 +27,7 @@ struct TIMER_ITEM
 	struct event* ev;	// 内核定时器事件
 	int tid;		// 用户定时器ID
 
-	TIMER_ITEM(ITimer* owner) : owner(owner), real_tid(-1), tms(-1), tid(-1),begin(0), end(0)
+	TIMER_ITEM(ISocketTimer* owner) : owner(owner), real_tid(-1), tms(-1), tid(-1),begin(0), end(0)
 	{
 		ev = new struct event;
 	}
@@ -65,7 +63,7 @@ struct timer_item_cmp_fun // 比较函数 ==
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-class TimerCore
+class SocketTimerCore
 {
 public:
 #ifdef _WIN32
@@ -78,7 +76,6 @@ public:
 		}
 	}
 #endif
-
 
 	static void  __timer_cb__(evutil_socket_t fd, short event, void *arg)
 	{
@@ -94,7 +91,7 @@ public:
 //////////////////////////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
 
-class TimerWin32 : public Object, public ITimer
+class TimerWin32 : public Object, public ISocketTimer
 {
 public:
 	TimerWin32();
@@ -105,9 +102,8 @@ public:
 	virtual void destroy() override;
 
 public:
-	virtual int start(int tid, int tms, TimerCallback func) override;
-	virtual int start_once(int tid, int tms, TimerCallback func) override;
-	virtual void kill(int tid) override;
+	virtual int add(int tid, int tms, TimerCallback func) override;
+	virtual void remove(int tid) override;
 
 public:
 	std::string debug() override;
@@ -120,7 +116,7 @@ private:
 
 private:
 	TIMERS _timers;
-	TimerCallback _on_timer;
+	TimerCallback _onTimer;
 };
 
 TimerWin32::TimerWin32()
@@ -162,19 +158,13 @@ std::string TimerWin32::debug()
 	return std::string("TimerWin32");
 }
 
-int TimerWin32::start(int tid, int tms, TimerCallback func)
+int TimerWin32::add(int tid, int tms, TimerCallback func)
 {
 	int r = this->__start(tid, tms, func, TIME_PERIODIC);
 	return r;
 }
 
-int TimerWin32::start_once(int tid, int tms, TimerCallback func)
-{
-	int r = this->__start(tid, tms, func, TIME_ONESHOT);
-	return r;
-}
-
-void TimerWin32::kill(int tid)
+void TimerWin32::remove(int tid)
 {
 	if (tid < 0) return;
 
@@ -209,7 +199,7 @@ int TimerWin32::__start(int tid, int tms, TimerCallback func, unsigned int fuEve
 {
 	if (tid < 0) return -1;
 
-	this->_on_timer = func;
+	this->_onTimer = func;
 
 	TIMER_ITEM* ptimer = this->_timers[tid];
 	if (ptimer != nullptr)
@@ -221,7 +211,7 @@ int TimerWin32::__start(int tid, int tms, TimerCallback func, unsigned int fuEve
 	ptimer = new TIMER_ITEM(this);
 
 	UINT real_tid = 0;
-	real_tid = ::timeSetEvent(tms, 10, TimerCore::__timer_cb_win32__, (DWORD_PTR)ptimer, fuEvent);
+	real_tid = ::timeSetEvent(tms, 10, SocketTimerCore::__timer_cb_win32__, (DWORD_PTR)ptimer, fuEvent);
 	if (tid != 0)
 	{
 		ptimer->tms = tms;
@@ -248,16 +238,16 @@ void TimerWin32::_timer_cb(TIMER_ITEM* timer)
 	timer->end = ::timeGetTime();
 	unsigned int new_begin = timer->begin;
 	timer->begin = timer->end;
-	bool r = this->_on_timer(timer->tid, timer->end - new_begin);
+	bool r = this->_onTimer(timer->tid, timer->end - new_begin);
 	if (!r)
 	{
-		this->kill(timer->tid);
+		this->remove(timer->tid);
 	}
 }
 
 #endif
 
-class TimerLinux : public Object, public ITimer
+class TimerLinux : public Object, public ISocketTimer
 {
 public:
 	TimerLinux();
@@ -268,9 +258,8 @@ public:
 	virtual void destroy() override;
 
 public:
-	virtual int start(int tid, int tms, TimerCallback func) override;
-	virtual int start_once(int tid, int tms, TimerCallback func) override;
-	virtual void kill(int tid) override;
+	virtual int add(int tid, int tms, TimerCallback func) override;
+	virtual void remove(int tid) override;
 
 public:
 	std::string debug() override;
@@ -305,16 +294,19 @@ int TimerLinux::create(SocketProcessor* processor)
 
 void TimerLinux::destroy()
 {
-	TIMERS::iterator iter = _timers.begin();
-	while (iter != _timers.end())
 	{
-		TIMER_ITEM* pTimer = iter->second;
+		lw_lock_guard l(&_lock);
+		TIMERS::iterator iter = _timers.begin();
+		while (iter != _timers.end())
+		{
+			TIMER_ITEM* pTimer = iter->second;
 
-		event_del(pTimer->ev);
+			event_del(pTimer->ev);
 
-		delete pTimer;
+			delete pTimer;
 
-		iter = _timers.erase(iter);
+			iter = _timers.erase(iter);
+		}
 	}
 }
 
@@ -323,7 +315,7 @@ std::string TimerLinux::debug()
 	return std::string("TimerLinux");
 }
 
-int TimerLinux::start(int tid, int tms, TimerCallback func)
+int TimerLinux::add(int tid, int tms, TimerCallback func)
 {
 	if (tid < 0) return -1;
 
@@ -352,7 +344,7 @@ int TimerLinux::start(int tid, int tms, TimerCallback func)
 		//r = event_assign(ptimer->ev, this->_base, -1, 0, TimerCore::__timer_cb__, ptimer);
 
 		/* 定时器无限次执行*/
-		r = event_assign(ptimer->ev, this->_processor->getBase(), -1, EV_PERSIST, TimerCore::__timer_cb__, ptimer);
+		r = event_assign(ptimer->ev, this->_processor->getBase(), -1, EV_PERSIST, SocketTimerCore::__timer_cb__, ptimer);
 
 		struct timeval tv;
 		evutil_timerclear(&tv);
@@ -360,17 +352,12 @@ int TimerLinux::start(int tid, int tms, TimerCallback func)
 		tv.tv_usec = (tms % 1000) * 1000;
 
 		r = event_add(ptimer->ev, &tv);
+
 		return r;
 	}
 }
 
-int TimerLinux::start_once(int tid, int tms, TimerCallback func)
-{
-
-	return 0;
-}
-
-void TimerLinux::kill(int tid)
+void TimerLinux::remove(int tid)
 {
 	if (tid < 0) return;
 
@@ -405,7 +392,7 @@ void TimerLinux::_timer_cb(TIMER_ITEM* timer)
 	bool r = this->_on_timer(ptimer->tid, 0);
 	if (!r)
 	{
-		this->kill(ptimer->tid);
+		this->remove(ptimer->tid);
 	}
 }
 
@@ -434,19 +421,14 @@ void SocketTimer::destroy()
 	_timer->destroy();
 }
 
-int SocketTimer::start(int tid, int tms, TimerCallback func)
+int SocketTimer::add(int tid, int tms, TimerCallback func)
 {
-	return _timer->start(tid, tms, func);
+	return _timer->add(tid, tms, func);
 }
 
-int SocketTimer::start_once(int tid, int tms, TimerCallback func)
+void SocketTimer::remove(int tid)
 {
-	return _timer->start_once(tid, tms, func);
-}
-
-void SocketTimer::kill(int tid)
-{
-	_timer->kill(tid);
+	_timer->remove(tid);
 }
 
 std::string SocketTimer::debug()

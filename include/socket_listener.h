@@ -15,6 +15,8 @@ class SocketProcessor;
 
 class SocketListener : public SocketObject
 {
+	friend class ListenerCore;
+
 public:
 	SocketListener();
 	virtual ~SocketListener();
@@ -24,21 +26,21 @@ public:
 	void destroy();
 
 public:
-	void set_listener_cb(std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> func);
-	void set_listener_errorcb(std::function<void(void * userdata, int er)> func);
-
-public:
-	void listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int);
-	void listener_error_cb(struct evconnlistener *);
+	void listenerCB(std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> func);
+	void listenerErrorCB(std::function<void(void * userdata, int er)> func);
 
 public:
 	virtual std::string debug() override;
 
 private:
+	void __listener_cb(struct evconnlistener *, evutil_socket_t, struct sockaddr *, int);
+	void __listener_error_cb(struct evconnlistener *);
+
+private:
 	SocketConfig* _config;
 	struct evconnlistener* _listener;
-	std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> listener_func;
-	std::function<void(void * userdata, int err)> listener_error_func;
+	std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> _on_listener_func;
+	std::function<void(void * userdata, int err)> _on_listener_error_func;
 };
 
 

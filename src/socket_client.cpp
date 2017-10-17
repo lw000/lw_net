@@ -91,12 +91,12 @@ SocketSession* SocketClient::getSession()
 	return this->_session;
 }
 
-void SocketClient::startTimer(int tid, unsigned int tms, TimerCallback func) {
-	int c = this->_timer->start(tid, tms, func);
+void SocketClient::addTimer(int tid, unsigned int tms, TimerCallback func) {
+	int c = this->_timer->add(tid, tms, func);
 }
 
-void SocketClient::killTimer(int tid) {
-	this->_timer->kill(tid);
+void SocketClient::removeTimer(int tid) {
+	this->_timer->remove(tid);
 }
 
 int SocketClient::onStart() {
