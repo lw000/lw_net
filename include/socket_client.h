@@ -6,10 +6,12 @@
 #include "object.h"
 #include "Threadable.h"
 #include "socket_hanlder.h"
+#include "socket_timer.h"
 
 class SocketConfig;
 class SocketClient;
 class SocketProcessor;
+class SocketTimer;
 
 class SocketClient : public Object, public Threadable
 {
@@ -27,15 +29,15 @@ public:
 	virtual ~SocketClient();
 
 public:
-	bool create(/*AbstractSocketClientHandler* handler, */SocketConfig* config);
+	bool create(SocketConfig* conf);
 	void destroy();
 
 public:
-	int open();
+	int close();
 
 public:
-	int loopbreak();
-	int loopexit();
+	void startTimer(int tid, unsigned int tms, TimerCallback func);
+	void killTimer(int tid);
 
 public:
 	SocketSession* getSession();
@@ -51,6 +53,7 @@ protected:
 private:
 	SocketProcessor* _processor;
 	SocketSession* _session;
+	SocketTimer* _timer;
 };
 
 #endif // !__SocketClient_H__

@@ -40,10 +40,8 @@ SocketServer::~SocketServer()
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketServer::create(/*AbstractSocketServerHandler* handler, */SocketConfig* config)
+bool SocketServer::create(SocketConfig* config)
 {
-//	this->_handler = handler;
-
 	bool ret = this->_processor->create(true);
 	if (ret) {
 		ret = _listener->create(_processor, config);
@@ -93,22 +91,22 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 	this->_onFunc = func;
 
 	_listener->set_listener_cb([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-		SocketSession* pSession = new SocketSession(/*this->_handler, */new SocketConfig);
+		SocketSession* pSession = new SocketSession(new SocketConfig);
 		pSession->connectedHandler = this->connectedHandler;
 		pSession->disConnectHandler = this->disConnectHandler;
 		pSession->timeoutHandler = this->timeoutHandler;
 		pSession->errorHandler = this->errorHandler;
 		pSession->parseHandler = this->parseHandler;
 
-		int r = pSession->create(SESSION_TYPE::Server, this->_processor, fd);
+		int r = pSession->create(SESSION_TYPE::server, this->_processor, fd);
 		if (r == 0)
 		{
 			char hostBuf[NI_MAXHOST];
 			char portBuf[64];
 			getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
 
-			pSession->getConfig()->setHost(hostBuf);
-			pSession->getConfig()->setPort(std::stoi(portBuf));
+			pSession->getConf()->setHost(hostBuf);
+			pSession->getConf()->setPort(std::stoi(portBuf));
 
 			//this->_handler->onListener(pSession);
 			if (this->listenHandler != nullptr) {

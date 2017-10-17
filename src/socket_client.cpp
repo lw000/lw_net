@@ -10,6 +10,7 @@
 #include "socket_hanlder.h"
 #include "socket_processor.h"
 #include "socket_session.h"
+#include "socket_timer.h"
 
 #include "common_marco.h"
 
@@ -18,27 +19,38 @@ using namespace zsummer::log4z;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SocketClient::SocketClient() : _processor(nullptr), _session(nullptr)
+SocketClient::SocketClient() : _session(nullptr)
 {
 	this->_processor = new SocketProcessor();
+	this->_timer = new SocketTimer;
 }
 
 SocketClient::~SocketClient()
 {
+	SAFE_DELETE(this->_timer);
 	SAFE_DELETE(this->_session);
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketClient::create(/*AbstractSocketClientHandler* handler, */SocketConfig* config)
+bool SocketClient::create(SocketConfig* conf)
 {						
 	bool ret = this->_processor->create(false);
 	if (ret) {
-		this->_session = new SocketSession(/*handler, */config);
+		int c = 0;
+		c = this->_timer->create(this->_processor);
+// 		c = this->_timer->start(1, 10000,
+// 			[this](int tid, unsigned int tms) -> bool {
+// 			printf("client heart [%d]", tid);
+// 			return true;
+// 		});
+		this->_session = new SocketSession(conf);
 		this->_session->connectedHandler = this->connectedHandler;
 		this->_session->disConnectHandler = this->disConnectHandler;
 		this->_session->timeoutHandler = this->timeoutHandler;
 		this->_session->errorHandler = this->errorHandler;
 		this->_session->parseHandler = this->parseHandler;
+
+		this->start();
 	}
 
 	return true;
@@ -46,6 +58,11 @@ bool SocketClient::create(/*AbstractSocketClientHandler* handler, */SocketConfig
 
 void SocketClient::destroy()
 {
+	if (this->_timer != nullptr)
+	{
+		this->_timer->destroy();
+	}
+
 	if (this->_session != nullptr)
 	{
 		this->_session->destroy();
@@ -64,19 +81,7 @@ std::string SocketClient::debug()
 	return std::string(buf);
 }
 
-int SocketClient::open()
-{
-	this->start();
-
-	return 0;
-}
-
-int SocketClient::loopbreak()
-{
-	return this->_processor->loopbreak();
-}
-
-int SocketClient::loopexit()
+int SocketClient::close()
 {
 	return this->_processor->loopexit();
 }
@@ -86,13 +91,21 @@ SocketSession* SocketClient::getSession()
 	return this->_session;
 }
 
+void SocketClient::startTimer(int tid, unsigned int tms, TimerCallback func) {
+	int c = this->_timer->start(tid, tms, func);
+}
+
+void SocketClient::killTimer(int tid) {
+	this->_timer->kill(tid);
+}
+
 int SocketClient::onStart() {
 
 	return 0;
 }
 
 int SocketClient::onRun() {
-	int r = this->_session->create(SESSION_TYPE::Client, this->_processor);
+	int r = this->_session->create(SESSION_TYPE::client, this->_processor);
 	if (r == 0)
 	{
 		this->_processor->dispatch();
@@ -105,6 +118,7 @@ int SocketClient::onRun() {
 }
 
 int SocketClient::onEnd() {
+	
 	this->destroy();
 
 	return 0;

@@ -31,6 +31,7 @@
     <ClCompile Include="./src/socket_client.cpp" />
     <ClCompile Include="./src/socket_server.cpp" />
     <ClCompile Include="./src/socket_timer.cpp" />
+    <ClCompile Include="src\socket_object.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="./include/message_queue.h" />
@@ -47,6 +48,7 @@
     <ClInclude Include="./include/socket_timer.h" />
     <ClInclude Include="include\nanomsgcpp_socket.h" />
     <ClInclude Include="include\socket_config.h" />
+    <ClInclude Include="include\socket_object.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{006686E3-6160-4984-827E-B9200E5B3338}</ProjectGuid>

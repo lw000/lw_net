@@ -2,9 +2,9 @@
 #define __socket_config_h__
 
 #include <string>
-#include "object.h"
+#include "socket_object.h"
 
-class SocketConfig : public Object
+class SocketConfig : public SocketObject
 {
 public:
 	SocketConfig() {

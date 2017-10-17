@@ -6,7 +6,7 @@
 #include <winsock2.h>
 #endif // WIN32
 
-int lw_socket_init()
+static int lw_socket_init()
 {
 #if defined(WIN32) || defined(_WIN32)
 	WORD wVersionRequested;
@@ -22,13 +22,12 @@ int lw_socket_init()
 	return 0;
 }
 
-void lw_socket_clean()
+static void lw_socket_clean()
 {
 #if defined(WIN32) || defined(_WIN32)
 	WSACleanup();
 #endif
 }
-
 
 SocketInit::SocketInit()
 {

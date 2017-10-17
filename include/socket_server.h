@@ -5,19 +5,19 @@
 #include <list>
 #include <unordered_map>
 #include <event2/util.h>
-#include "object.h"
+#include "socket_object.h"
 #include "Threadable.h"
 #include "socket_hanlder.h"
 
 #include <functional>
 
-class Timer;
+class SocketTimer;
 class SocketConfig;
 class SocketSession;
 class SocketProcessor;
 class SocketListener;
 
-class SocketServer : public Object, public Threadable
+class SocketServer : public SocketObject, public Threadable
 {
 public:
 	SocketEventHandler connectedHandler;
@@ -36,7 +36,7 @@ public:
 	virtual ~SocketServer();
 
 public:
-	bool create(/*AbstractSocketServerHandler* handler, */SocketConfig* config);
+	bool create(SocketConfig* config);
 	void destroy();
 
 public:

@@ -7,7 +7,7 @@
 #include <event2/util.h>
 
 #include "common_type.h"
-#include "object.h"
+#include "socket_object.h"
 
 #include "socket_hanlder.h"
 
@@ -15,15 +15,16 @@ class NetIOBuffer;
 class SocketConfig;
 class SocketSession;
 class SocketProcessor;
+class SocketTimer;
 
 enum SESSION_TYPE
 {
-	NONE = 0,
-	Client = 1,
-	Server = 2,
+	none = 0,
+	client = 1,
+	server = 2,
 };
 
-class SocketSession : public Object
+class SocketSession : public SocketObject
 {
 	friend class SessionCore;
 
@@ -35,7 +36,7 @@ public:
 	SocketParseHandler parseHandler;
 
 public:
-	SocketSession(/*AbstractSocketSessionHanlder* handler, */SocketConfig* config);
+	SocketSession(SocketConfig* conf);
 	virtual ~SocketSession();
 
 public:
@@ -44,14 +45,17 @@ public:
 
 public:
 	bool connected();
-	SocketConfig* getConfig() const;
+
+public:
+	void setConf(SocketConfig* conf);
+	SocketConfig* getConf() const;
 
 public:
 	virtual std::string debug() override;
 
 public:
 	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize);
-	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, lw_int32 recvcmd, SocketRecvCallback cb);
+	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, const SocketRecvHandlerConf& cb);
 
 private:
 	void __onRead();
@@ -60,20 +64,19 @@ private:
 	void __onParse(lw_int32 cmd, char* buf, lw_int32 bufsize);
 
 private:
-	std::unordered_map<lw_int32, SocketRecvCallback> _cmd_event_map;
+	std::unordered_map<lw_int32, SocketRecvHandlerConf> _event_callback_map;
 
 private:
 	SESSION_TYPE _c;	//session¿‡–Õ
 
 private:
 	bool _connected;
-	SocketConfig* _config;
+	SocketConfig* _conf;
 
 private:
 	NetIOBuffer* _iobuffer;
 	SocketProcessor* _processor;
 	struct bufferevent* _bev;
-// 	AbstractSocketSessionHanlder * _handler;
 };
 
 

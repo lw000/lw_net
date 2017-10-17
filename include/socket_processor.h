@@ -4,11 +4,11 @@
 #include <string>
 
 #include "common_type.h"
-#include "object.h"
+#include "socket_object.h"
 
 struct event_base;
 
-class SocketProcessor : public Object
+class SocketProcessor : public SocketObject
 {
 public:
 	static void use_threads();

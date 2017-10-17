@@ -2,7 +2,7 @@
 #define __SocketTimer_H__
 
 #include "common_type.h"
-#include "object.h"
+#include "socket_object.h"
 
 #include <unordered_map>
 #include <functional>
@@ -11,7 +11,7 @@ class SocketProcessor;
 
 struct TIMER_ITEM;
 
-typedef std::function<bool(int tid, unsigned int tms)> TIMER_CALLBACK;
+typedef std::function<bool(int tid, unsigned int tms)> TimerCallback;
 
 class ITimer
 {
@@ -30,27 +30,27 @@ public:
 	virtual void destroy() = 0;
 
 public:
-	virtual int start(int tid, int tms, TIMER_CALLBACK func) = 0;
-	virtual int start_once(int tid, int tms, TIMER_CALLBACK func) = 0;
+	virtual int start(int tid, int tms, TimerCallback func) = 0;
+	virtual int start_once(int tid, int tms, TimerCallback func) = 0;
 	virtual void kill(int tid) = 0;
 
 protected:
 	virtual void _timer_cb(TIMER_ITEM* timer) = 0;
 };
 
-class Timer : public Object
+class SocketTimer : public SocketObject
 {
 public:
-	Timer();
-	virtual ~Timer();
+	SocketTimer();
+	virtual ~SocketTimer();
 
 public:
 	int create(SocketProcessor* processor);
 	void destroy();
 
 public:
-	int start(int tid, int tms, TIMER_CALLBACK func);
-	int start_once(int tid, int tms, TIMER_CALLBACK func);
+	int start(int tid, int tms, TimerCallback func);
+	int start_once(int tid, int tms, TimerCallback func);
 	void kill(int tid);
 
 public:

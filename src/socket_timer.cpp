@@ -16,6 +16,7 @@
 //#include <thread>
 
 #include "socket_processor.h"
+#include "lock.h"
 
 struct TIMER_ITEM
 {
@@ -104,8 +105,8 @@ public:
 	virtual void destroy() override;
 
 public:
-	virtual int start(int tid, int tms, TIMER_CALLBACK func) override;
-	virtual int start_once(int tid, int tms, TIMER_CALLBACK func) override;
+	virtual int start(int tid, int tms, TimerCallback func) override;
+	virtual int start_once(int tid, int tms, TimerCallback func) override;
 	virtual void kill(int tid) override;
 
 public:
@@ -115,11 +116,11 @@ protected:
 	virtual void _timer_cb(TIMER_ITEM* timer) override;
 
 private:
-	int __start(int tid, int tms, TIMER_CALLBACK func, unsigned int fuEvent);
+	int __start(int tid, int tms, TimerCallback func, unsigned int fuEvent);
 
 private:
 	TIMERS _timers;
-	TIMER_CALLBACK _on_timer;
+	TimerCallback _on_timer;
 };
 
 TimerWin32::TimerWin32()
@@ -161,13 +162,13 @@ std::string TimerWin32::debug()
 	return std::string("TimerWin32");
 }
 
-int TimerWin32::start(int tid, int tms, TIMER_CALLBACK func)
+int TimerWin32::start(int tid, int tms, TimerCallback func)
 {
 	int r = this->__start(tid, tms, func, TIME_PERIODIC);
 	return r;
 }
 
-int TimerWin32::start_once(int tid, int tms, TIMER_CALLBACK func)
+int TimerWin32::start_once(int tid, int tms, TimerCallback func)
 {
 	int r = this->__start(tid, tms, func, TIME_ONESHOT);
 	return r;
@@ -204,7 +205,7 @@ void TimerWin32::kill(int tid)
 	}
 }
 
-int TimerWin32::__start(int tid, int tms, TIMER_CALLBACK func, unsigned int fuEvent)
+int TimerWin32::__start(int tid, int tms, TimerCallback func, unsigned int fuEvent)
 {
 	if (tid < 0) return -1;
 
@@ -267,8 +268,8 @@ public:
 	virtual void destroy() override;
 
 public:
-	virtual int start(int tid, int tms, TIMER_CALLBACK func) override;
-	virtual int start_once(int tid, int tms, TIMER_CALLBACK func) override;
+	virtual int start(int tid, int tms, TimerCallback func) override;
+	virtual int start_once(int tid, int tms, TimerCallback func) override;
 	virtual void kill(int tid) override;
 
 public:
@@ -280,7 +281,8 @@ protected:
 private:
 	SocketProcessor* _processor;
 	TIMERS _timers;
-	TIMER_CALLBACK _on_timer;
+	TimerCallback _on_timer;
+	lw_fast_lock _lock;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -321,46 +323,48 @@ std::string TimerLinux::debug()
 	return std::string("TimerLinux");
 }
 
-int TimerLinux::start(int tid, int tms, TIMER_CALLBACK func)
+int TimerLinux::start(int tid, int tms, TimerCallback func)
 {
 	if (tid < 0) return -1;
 
-	this->_on_timer = func;
+	{
+		lw_lock_guard l(&_lock);
+		this->_on_timer = func;
 
-	TIMER_ITEM* ptimer = this->_timers[tid];
-	if (ptimer == nullptr)
-	{
-		ptimer = new TIMER_ITEM(this);
-		_timers[tid] = ptimer;
-	}
-	else
-	{
+		TIMER_ITEM* ptimer = this->_timers[tid];
+		if (ptimer == nullptr)
+		{
+			ptimer = new TIMER_ITEM(this);
+			_timers[tid] = ptimer;
+		}
+		else
+		{
+			int r = 0;
+			r = event_del(ptimer->ev);
+		}
+
+		ptimer->tid = tid;
+		ptimer->tms = tms;
+
+		// 设置定时器
 		int r = 0;
-		r = event_del(ptimer->ev);
+		/* 定时器只执行一次，每次需要添加*/
+		//r = event_assign(ptimer->ev, this->_base, -1, 0, TimerCore::__timer_cb__, ptimer);
+
+		/* 定时器无限次执行*/
+		r = event_assign(ptimer->ev, this->_processor->getBase(), -1, EV_PERSIST, TimerCore::__timer_cb__, ptimer);
+
+		struct timeval tv;
+		evutil_timerclear(&tv);
+		tv.tv_sec = tms / 1000;
+		tv.tv_usec = (tms % 1000) * 1000;
+
+		r = event_add(ptimer->ev, &tv);
+		return r;
 	}
-
-	ptimer->tid = tid;
-	ptimer->tms = tms;
-
-	// 设置定时器
-	int r = 0;
-	/* 定时器只执行一次，每次需要添加*/
-	//r = event_assign(ptimer->ev, this->_base, -1, 0, TimerCore::__timer_cb__, ptimer);
-
-	/* 定时器无限次执行*/
-	r = event_assign(ptimer->ev, this->_processor->getBase(), -1, EV_PERSIST, TimerCore::__timer_cb__, ptimer);
-
-	struct timeval tv;
-	evutil_timerclear(&tv);
-	tv.tv_sec = tms / 1000;
-	tv.tv_usec = (tms % 1000) * 1000;
-
-	r = event_add(ptimer->ev, &tv);
-
-	return r;
 }
 
-int TimerLinux::start_once(int tid, int tms, TIMER_CALLBACK func)
+int TimerLinux::start_once(int tid, int tms, TimerCallback func)
 {
 
 	return 0;
@@ -370,26 +374,29 @@ void TimerLinux::kill(int tid)
 {
 	if (tid < 0) return;
 
-	TIMER_ITEM* ptimer = this->_timers[tid];
-	if (ptimer != nullptr)
 	{
-		TIMERS::iterator iter = _timers.begin();
-		while (iter != _timers.end())
+		lw_lock_guard l(&_lock);
+		TIMER_ITEM* ptimer = this->_timers[tid];
+		if (ptimer != nullptr)
 		{
-			TIMER_ITEM* timer = iter->second;
-			if (timer->tid == tid)
+			TIMERS::iterator iter = _timers.begin();
+			while (iter != _timers.end())
 			{
-				int r = 0;
-				r = event_del(ptimer->ev);
-				delete timer;
+				TIMER_ITEM* timer = iter->second;
+				if (timer->tid == tid)
+				{
+					int r = 0;
+					r = event_del(ptimer->ev);
+					delete timer;
 
-				iter = _timers.erase(iter);
+					iter = _timers.erase(iter);
 
-				break;
+					break;
+				}
+				++iter;
 			}
-			++iter;
 		}
-	}
+	}	
 }
 
 void TimerLinux::_timer_cb(TIMER_ITEM* timer)
@@ -402,7 +409,7 @@ void TimerLinux::_timer_cb(TIMER_ITEM* timer)
 	}
 }
 
-Timer::Timer() : _timer(nullptr)
+SocketTimer::SocketTimer() : _timer(nullptr)
 {
 #ifdef _WIN32
 	//_timer = new TimerWin32;
@@ -412,37 +419,37 @@ Timer::Timer() : _timer(nullptr)
 #endif
 }
 
-Timer::~Timer()
+SocketTimer::~SocketTimer()
 {
 	
 }
 
-int Timer::create(SocketProcessor* processor)
+int SocketTimer::create(SocketProcessor* processor)
 {
 	return _timer->create(processor);
 }
 
-void Timer::destroy()
+void SocketTimer::destroy()
 {
 	_timer->destroy();
 }
 
-int Timer::start(int tid, int tms, TIMER_CALLBACK func)
+int SocketTimer::start(int tid, int tms, TimerCallback func)
 {
 	return _timer->start(tid, tms, func);
 }
 
-int Timer::start_once(int tid, int tms, TIMER_CALLBACK func)
+int SocketTimer::start_once(int tid, int tms, TimerCallback func)
 {
 	return _timer->start_once(tid, tms, func);
 }
 
-void Timer::kill(int tid)
+void SocketTimer::kill(int tid)
 {
 	_timer->kill(tid);
 }
 
-std::string Timer::debug()
+std::string SocketTimer::debug()
 {
 	return std::string("Timer");
 }

@@ -4,7 +4,7 @@
 #include <string>
 
 #include "common_type.h"
-#include "object.h"
+#include "socket_object.h"
 
 #include <event2/util.h>
 #include <functional>
@@ -13,7 +13,7 @@ struct evconnlistener;
 class SocketConfig;
 class SocketProcessor;
 
-class SocketListener : public Object
+class SocketListener : public SocketObject
 {
 public:
 	SocketListener();
