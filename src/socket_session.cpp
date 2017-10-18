@@ -44,7 +44,7 @@ public:
 		}
 
 		int er = EVUTIL_SOCKET_ERROR();
-		// 10061 ÓÉÓÚÄ¿±ê¼ÆËã»ú»ý¼«¾Ü¾ø£¬ÎÞ·¨Á¬½Ó¡£ 
+		// 10061 ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü¾ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½Ó¡ï¿½ 
 		session->destroy();
 		delete session;
 	}
@@ -94,15 +94,15 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		this->_bev = bufferevent_socket_new(processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		if (this->_bev != nullptr) {
 			
-			{
-				int c0 = bufferevent_set_max_single_write(this->_bev, SEND_BUFFER_SIZE);
-				int c1 = bufferevent_set_max_single_read(this->_bev, RECV_BUFFER_SIZE);
-
-				int d1 = bufferevent_get_max_single_read(this->_bev);
-				int d2 = bufferevent_get_max_single_write(this->_bev);
-				int d3 = bufferevent_get_max_to_read(this->_bev);
-				int d4 = bufferevent_get_max_to_write(this->_bev);
-			}
+//			{
+//				int c0 = bufferevent_set_max_single_write(this->_bev, SEND_BUFFER_SIZE);
+//				int c1 = bufferevent_set_max_single_read(this->_bev, RECV_BUFFER_SIZE);
+//
+//				int d1 = bufferevent_get_max_single_read(this->_bev);
+//				int d2 = bufferevent_get_max_single_write(this->_bev);
+//				int d3 = bufferevent_get_max_to_read(this->_bev);
+//				int d4 = bufferevent_get_max_to_write(this->_bev);
+//			}
 
 			bufferevent_setcb(this->_bev, SessionCore::__read_cb, SessionCore::__write_cb, SessionCore::__event_cb, this);
 			bufferevent_enable(this->_bev, EV_READ | EV_WRITE | EV_PERSIST);
@@ -135,15 +135,15 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		this->_bev = bufferevent_socket_new(processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		if (this->_bev != nullptr) {
 
-			{
-				int c0 = bufferevent_set_max_single_write(this->_bev, SEND_BUFFER_SIZE);
-				int c1 = bufferevent_set_max_single_read(this->_bev, RECV_BUFFER_SIZE);
-
-				int d1 = bufferevent_get_max_single_read(this->_bev);
-				int d2 = bufferevent_get_max_single_write(this->_bev);
-				int d3 = bufferevent_get_max_to_read(this->_bev);
-				int d4 = bufferevent_get_max_to_write(this->_bev);
-			}
+//			{
+//				int c0 = bufferevent_set_max_single_write(this->_bev, SEND_BUFFER_SIZE);
+//				int c1 = bufferevent_set_max_single_read(this->_bev, RECV_BUFFER_SIZE);
+//
+//				int d1 = bufferevent_get_max_single_read(this->_bev);
+//				int d2 = bufferevent_get_max_single_write(this->_bev);
+//				int d3 = bufferevent_get_max_to_read(this->_bev);
+//				int d4 = bufferevent_get_max_to_write(this->_bev);
+//			}
 
 			int con = bufferevent_socket_connect(this->_bev, (struct sockaddr *)&saddr, sizeof(saddr));
 			if (con == 0) {
