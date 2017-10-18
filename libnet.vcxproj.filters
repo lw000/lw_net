@@ -52,6 +52,12 @@
     <ClCompile Include="src\socket_object.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\client_session.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\server_session.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="./include/http_server.h">
@@ -97,6 +103,12 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\socket_object.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\client_session.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\server_session.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

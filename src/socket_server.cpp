@@ -19,13 +19,14 @@
 #endif // _WIN32
 
 #include "common_marco.h"
-#include "socket_session.h"
+#include "server_session.h"
 #include "socket_timer.h"
 #include "socket_processor.h"
 #include "socket_listener.h"
 #include "socket_config.h"
 
 #include <log4z.h>
+#include "net_package.h"
 
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
@@ -95,14 +96,34 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 	this->_onFunc = func;
 
 	_listener->listenerCB([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-		SocketSession* pSession = new SocketSession(new SocketConfig);
-		pSession->connectedHandler = this->connectedHandler;
-		pSession->disConnectHandler = this->disConnectHandler;
-		pSession->timeoutHandler = this->timeoutHandler;
-		pSession->errorHandler = this->errorHandler;
-		pSession->parseHandler = this->parseHandler;
+		
+		ServerSession* pSession = new ServerSession(new SocketConfig);
 
-		int r = pSession->create(SESSION_TYPE::server, this->_processor, fd);
+		pSession->disConnectHandler = [this](SocketSession* session) {
+			this->disConnectHandler(session);
+		};
+
+		pSession->timeoutHandler = [this](SocketSession* session) {
+			this->timeoutHandler(session);
+		};
+
+		pSession->errorHandler = [this](SocketSession* session) {
+			this->errorHandler(session);
+		};
+
+		pSession->parseHandler = [this](SocketSession* session, lw_int32 cmd,
+			lw_char8* buf, lw_int32 bufsize) {
+
+			if (cmd == NET_HEART_BEAT_PING) {
+				LOGFMTD("NET_HEART_BEAT_PING: %d", NET_HEART_BEAT_PING);
+				session->sendData(NET_HEART_BEAT_PONG, NULL, 0);
+				return;
+			}
+
+			this->parseHandler(session, cmd, buf, bufsize);
+		};
+
+		int r = pSession->create(this->_processor, fd);
 		if (r == 0)
 		{
 			char hostBuf[NI_MAXHOST];
@@ -113,14 +134,20 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 			pSession->getConf()->setPort(std::stoi(portBuf));
 
 			if (this->listenHandler != nullptr) {
+				addTimer(0, 30000, [pSession](int tid, unsigned int tms) -> bool {
+					pSession->sendData(NET_HEART_BEAT_PONG, NULL, 0);
+
+					return true;
+				});
+
 				this->listenHandler(pSession);
 			}
 		}
 		else
 		{
+			pSession->destroy();
 			SAFE_DELETE(pSession);
-			_processor->loopbreak();
-			LOGD("error constructing SocketSession!");
+			LOGD("error constructing ServerSession!");
 		}
 	});
 

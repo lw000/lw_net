@@ -45,7 +45,9 @@ public:
 
 public:
 	virtual std::string debug() override {
-		return std::string("SocketConfig");
+		char buf[256];
+		sprintf(buf, "host:%s, port:%d", this->_host.c_str(), _port);
+		return std::string(buf);
 	}
 
 private:

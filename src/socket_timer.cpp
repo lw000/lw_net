@@ -318,16 +318,18 @@ std::string TimerLinux::debug()
 int TimerLinux::add(int tid, int tms, TimerCallback func)
 {
 	if (tid < 0) return -1;
+	int r = 0;
 
 	{
 		lw_lock_guard l(&_lock);
+
 		this->_on_timer = func;
 
 		TIMER_ITEM* ptimer = this->_timers[tid];
 		if (ptimer == nullptr)
 		{
 			ptimer = new TIMER_ITEM(this);
-			_timers[tid] = ptimer;
+			_timers.insert(std::pair<lw_int32, TIMER_ITEM*>(tid, ptimer));
 		}
 		else
 		{
@@ -352,9 +354,9 @@ int TimerLinux::add(int tid, int tms, TimerCallback func)
 		tv.tv_usec = (tms % 1000) * 1000;
 
 		r = event_add(ptimer->ev, &tv);
-
-		return r;
 	}
+
+	return r;
 }
 
 void TimerLinux::remove(int tid)

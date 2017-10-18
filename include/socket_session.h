@@ -8,12 +8,10 @@
 
 #include "common_type.h"
 #include "socket_object.h"
-
 #include "socket_hanlder.h"
 
 class NetIOBuffer;
 class SocketConfig;
-class SocketSession;
 class SocketProcessor;
 class SocketTimer;
 
@@ -44,10 +42,9 @@ public:
 	void destroy();
 
 public:
-	bool connected();
+	bool connected() const;
 
 public:
-	void setConf(SocketConfig* conf);
 	SocketConfig* getConf() const;
 
 public:
@@ -58,25 +55,19 @@ public:
 	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, const SocketRecvHandlerConf& cb);
 
 private:
-	void __onRead();
-	void __onWrite();
-	void __onEvent(short ev);
-	void __onParse(lw_int32 cmd, char* buf, lw_int32 bufsize);
+	void __on_read();
+	void __on_write();
+	void __on_event(short ev);
+	void __on_parse(lw_int32 cmd, char* buf, lw_int32 bufsize);
 
-private:
-	std::unordered_map<lw_int32, SocketRecvHandlerConf> _event_callback_map;
-
-private:
+protected:
 	SESSION_TYPE _c;	//session¿‡–Õ
-
-private:
 	bool _connected;
 	SocketConfig* _conf;
-
-private:
 	NetIOBuffer* _iobuffer;
-	SocketProcessor* _processor;
+	SocketTimer* _timer;
 	struct bufferevent* _bev;
+	std::unordered_map<lw_int32, SocketRecvHandlerConf> _event_callback_map;
 };
 
 

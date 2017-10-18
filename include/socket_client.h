@@ -12,11 +12,14 @@ class SocketConfig;
 class SocketClient;
 class SocketProcessor;
 class SocketTimer;
+class ClientSession;
 
 class SocketClient : public Object, public Threadable
 {
 public:
 	SocketEventHandler connectedHandler;
+
+public:
 	SocketEventHandler disConnectHandler;
 	SocketEventHandler timeoutHandler;
 	SocketEventHandler errorHandler;
@@ -33,6 +36,8 @@ public:
 	void destroy();
 
 public:
+	void setAutoHeartBeat(int tms = 30000);
+
 	int close();
 
 public:
@@ -40,7 +45,7 @@ public:
 	void removeTimer(int tid);
 
 public:
-	SocketSession* getSession();
+	ClientSession* getSession();
 
 public:
 	virtual std::string debug() override;
@@ -51,8 +56,10 @@ protected:
 	virtual int onEnd() override;
 
 private:
+	bool _enable_heart_beat;
+	int _heart_beat_tms;
 	SocketProcessor* _processor;
-	SocketSession* _session;
+	ClientSession* _session;
 	SocketTimer* _timer;
 };
 

@@ -8,14 +8,25 @@ SessionManager::SessionManager()
 
 SessionManager::~SessionManager()
 {
+	this->destroy();
+}
+
+bool SessionManager::create() {
+
+	return true;
+}
+
+void SessionManager::destroy() {
 	{
-		std::list<SocketSession*>::iterator iter = _live.begin();
-		for (; iter != _live.end(); ++iter)
+		lw_lock_guard l(&_m);
 		{
-			SocketSession* pUserinfo = (*iter);
-			delete pUserinfo;
+			std::list<SocketSession*>::iterator iter = _live.begin();
+			for (; iter != _live.end(); ++iter)
+			{
+				SocketSession* pUserinfo = (*iter);
+				delete pUserinfo;
+			}
 		}
-	}
 
 	{
 		std::list<SocketSession*>::iterator iter = _die.begin();
@@ -24,6 +35,7 @@ SessionManager::~SessionManager()
 			SocketSession* pUserinfo = (*iter);
 			delete pUserinfo;
 		}
+	}
 	}
 }
 

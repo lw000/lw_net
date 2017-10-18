@@ -13,6 +13,10 @@ public:
 	~SessionManager();
 
 public:
+	bool create();
+	void destroy();
+
+public:
 	SocketSession* add(const SocketSession* session);
 	void remove(const SocketSession* session);
 

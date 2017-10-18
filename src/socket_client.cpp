@@ -5,22 +5,25 @@
 
 #include "event2/event.h"
 
+#include "common_marco.h"
+
+#include "net_package.h"
 #include "net_iobuffer.h"
 #include "socket_config.h"
 #include "socket_hanlder.h"
 #include "socket_processor.h"
 #include "socket_session.h"
+#include "client_session.h"
 #include "socket_timer.h"
 
-#include "common_marco.h"
-
 #include "log4z.h"
-using namespace zsummer::log4z;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SocketClient::SocketClient() : _session(nullptr)
 {
+	_enable_heart_beat = false;
+	_heart_beat_tms = 30000;
 	this->_processor = new SocketProcessor();
 	this->_timer = new SocketTimer;
 }
@@ -38,17 +41,44 @@ bool SocketClient::create(SocketConfig* conf)
 	if (ret) {
 		int c = 0;
 		c = this->_timer->create(this->_processor);
-// 		c = this->_timer->start(1, 10000,
-// 			[this](int tid, unsigned int tms) -> bool {
-// 			printf("client heart [%d]", tid);
-// 			return true;
-// 		});
-		this->_session = new SocketSession(conf);
-		this->_session->connectedHandler = this->connectedHandler;
-		this->_session->disConnectHandler = this->disConnectHandler;
-		this->_session->timeoutHandler = this->timeoutHandler;
-		this->_session->errorHandler = this->errorHandler;
-		this->_session->parseHandler = this->parseHandler;
+
+		this->_session = new ClientSession(conf);
+
+		this->_session->connectedHandler = [this](SocketSession* session) {
+ 			
+			addTimer(0, _heart_beat_tms, [this](int tid, unsigned int tms) -> bool {
+				this->_session->sendData(NET_HEART_BEAT_PING, NULL, 0);
+ 				return true;
+ 			});
+			
+			this->connectedHandler(session);
+		};
+
+		this->_session->disConnectHandler = [this](SocketSession* session) {
+
+			this->disConnectHandler(session);
+		};
+
+		this->_session->timeoutHandler = [this](SocketSession* session){
+
+			this->timeoutHandler(session);
+		}; 
+
+		this->_session->errorHandler = [this](SocketSession* session) {
+
+			this->errorHandler(session);
+		}; 
+
+		this->_session->parseHandler = [this](SocketSession* session, lw_int32 cmd,
+			lw_char8* buf, lw_int32 bufsize) {
+
+			if (cmd == NET_HEART_BEAT_PONG) {
+				LOGFMTD("NET_HEART_BEAT_PONG: %d", NET_HEART_BEAT_PONG);
+				return;
+			}
+
+			this->parseHandler(session, cmd, buf, bufsize);
+		};
 
 		this->start();
 	}
@@ -81,12 +111,17 @@ std::string SocketClient::debug()
 	return std::string(buf);
 }
 
+void SocketClient::setAutoHeartBeat(int tms) {
+	_enable_heart_beat = true;
+	_heart_beat_tms = tms;
+}
+
 int SocketClient::close()
 {
 	return this->_processor->loopexit();
 }
 
-SocketSession* SocketClient::getSession()
+ClientSession* SocketClient::getSession()
 {
 	return this->_session;
 }
@@ -105,14 +140,14 @@ int SocketClient::onStart() {
 }
 
 int SocketClient::onRun() {
-	int r = this->_session->create(SESSION_TYPE::client, this->_processor);
+	int r = this->_session->create(this->_processor);
 	if (r == 0)
 	{
-		this->_processor->dispatch();
+		int r = this->_processor->dispatch();
+		LOGFMTD("dispatch r = %d", r);
 	}
-	else {
-		LOGFMTD("SocketClient::onRun() r = %d", r);
-	}
+
+	LOGFMTD("SocketClient::onRun() r = %d", r);
 
 	return 0;
 }

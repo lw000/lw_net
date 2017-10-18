@@ -15,23 +15,22 @@
 
 class SocketTimer;
 class SocketConfig;
-class SocketSession;
+class ServerSession;
 class SocketProcessor;
 class SocketListener;
 
 class SocketServer : public SocketObject, public Threadable
 {
 public:
-	SocketEventHandler connectedHandler;
+	SocketEventHandler listenHandler;
+
+public:
 	SocketEventHandler disConnectHandler;
 	SocketEventHandler timeoutHandler;
 	SocketEventHandler errorHandler;
 
 public:
 	SocketParseHandler parseHandler;
-
-public:
-	SocketEventHandler listenHandler;
 
 public:
 	SocketServer();
@@ -66,7 +65,6 @@ private:
 
 private:
 	std::function<void(lw_int32 what)> _onFunc;
-	//AbstractSocketServerHandler* _handler;
 };
 
 #endif // !__SocketServer_H__ 
