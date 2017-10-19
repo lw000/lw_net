@@ -102,7 +102,7 @@ public:
 	virtual void destroy() override;
 
 public:
-	virtual int add(int tid, int tms, TimerCallback func) override;
+	virtual int add(int tid, int tms, const TimerCallback& func) override;
 	virtual void remove(int tid) override;
 
 public:
@@ -112,7 +112,7 @@ protected:
 	virtual void _timer_cb(TIMER_ITEM* timer) override;
 
 private:
-	int __start(int tid, int tms, TimerCallback func, unsigned int fuEvent);
+	int __start(int tid, int tms, const TimerCallback& func, unsigned int fuEvent);
 
 private:
 	TIMERS _timers;
@@ -158,7 +158,7 @@ std::string TimerWin32::debug()
 	return std::string("TimerWin32");
 }
 
-int TimerWin32::add(int tid, int tms, TimerCallback func)
+int TimerWin32::add(int tid, int tms, const TimerCallback& func)
 {
 	int r = this->__start(tid, tms, func, TIME_PERIODIC);
 	return r;
@@ -168,7 +168,14 @@ void TimerWin32::remove(int tid)
 {
 	if (tid < 0) return;
 
-	TIMER_ITEM* ptimer = this->_timers[tid];
+	TIMER_ITEM* ptimer = nullptr;
+	if (!this->_timers.empty()) {
+		auto v = this->_timers.find(tid);
+		if (v != this->_timers.end()) {
+			ptimer = v->second;
+		}
+	}
+
 	if (ptimer == nullptr) return;
 
 	UINT err = 0;
@@ -195,13 +202,20 @@ void TimerWin32::remove(int tid)
 	}
 }
 
-int TimerWin32::__start(int tid, int tms, TimerCallback func, unsigned int fuEvent)
+int TimerWin32::__start(int tid, int tms, const TimerCallback& func, unsigned int fuEvent)
 {
 	if (tid < 0) return -1;
 
 	this->_onTimer = func;
 
-	TIMER_ITEM* ptimer = this->_timers[tid];
+	TIMER_ITEM* ptimer = nullptr;
+	if (!this->_timers.empty()) {
+		auto v = this->_timers.find(tid);
+		if (v != this->_timers.end()) {
+			ptimer = v->second;
+		}
+	}
+
 	if (ptimer != nullptr)
 	{
 		UINT err = 0;
@@ -220,7 +234,7 @@ int TimerWin32::__start(int tid, int tms, TimerCallback func, unsigned int fuEve
 		ptimer->end = ptimer->begin;
 		ptimer->real_tid = real_tid;
 		
-		_timers[tid] = ptimer;
+		this->_timers.insert(std::pair<lw_int32, TIMER_ITEM*>(tid, ptimer));
 	}
 	else
 	{
@@ -258,7 +272,7 @@ public:
 	virtual void destroy() override;
 
 public:
-	virtual int add(int tid, int tms, TimerCallback func) override;
+	virtual int add(int tid, int tms, const TimerCallback& func) override;
 	virtual void remove(int tid) override;
 
 public:
@@ -315,7 +329,7 @@ std::string TimerLinux::debug()
 	return std::string("TimerLinux");
 }
 
-int TimerLinux::add(int tid, int tms, TimerCallback func)
+int TimerLinux::add(int tid, int tms, const TimerCallback& func)
 {
 	if (tid < 0) return -1;
 	int r = 0;
@@ -325,11 +339,18 @@ int TimerLinux::add(int tid, int tms, TimerCallback func)
 
 		this->_on_timer = func;
 
-		TIMER_ITEM* ptimer = this->_timers[tid];
+		TIMER_ITEM* ptimer = nullptr;
+		if (!this->_timers.empty()) {
+			auto v = this->_timers.find(tid);
+			if (v != this->_timers.end()) {
+				ptimer = v->second;
+			}		
+		}
+
 		if (ptimer == nullptr)
 		{
 			ptimer = new TIMER_ITEM(this);
-			_timers.insert(std::pair<lw_int32, TIMER_ITEM*>(tid, ptimer));
+			this->_timers.insert(std::pair<lw_int32, TIMER_ITEM*>(tid, ptimer));
 		}
 		else
 		{
@@ -365,7 +386,15 @@ void TimerLinux::remove(int tid)
 
 	{
 		lw_lock_guard l(&_lock);
-		TIMER_ITEM* ptimer = this->_timers[tid];
+		
+		TIMER_ITEM* ptimer = nullptr;
+		if (!this->_timers.empty()) {
+			auto v = this->_timers.find(tid);
+			if (v != this->_timers.end()) {
+				ptimer = v->second;
+			}
+		}
+
 		if (ptimer != nullptr)
 		{
 			TIMERS::iterator iter = _timers.begin();

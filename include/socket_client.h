@@ -13,6 +13,7 @@ class SocketClient;
 class SocketProcessor;
 class SocketTimer;
 class ClientSession;
+class SocketHeartbeat;
 
 class SocketClient : public Object, public Threadable
 {
@@ -25,7 +26,7 @@ public:
 	SocketEventHandler errorHandler;
 
 public:
-	SocketParseHandler parseHandler;
+	SocketParseDataHandler parseHandler;
 
 public:
 	SocketClient();
@@ -38,10 +39,11 @@ public:
 public:
 	void setAutoHeartBeat(int tms = 30000);
 
+public:
 	int close();
 
 public:
-	void addTimer(int tid, unsigned int tms, TimerCallback func);
+	int addTimer(int tid, unsigned int tms, const TimerCallback& func);
 	void removeTimer(int tid);
 
 public:
@@ -56,11 +58,9 @@ protected:
 	virtual int onEnd() override;
 
 private:
-	bool _enable_heart_beat;
-	int _heart_beat_tms;
+	SocketHeartbeat* _heartbeat;
 	SocketProcessor* _processor;
 	ClientSession* _session;
-	SocketTimer* _timer;
 };
 
 #endif // !__SocketClient_H__

@@ -18,19 +18,12 @@ class SocketConfig;
 class ServerSession;
 class SocketProcessor;
 class SocketListener;
+class SocketHeartbeat;
 
 class SocketServer : public SocketObject, public Threadable
 {
 public:
 	SocketListenerHandler listenHandler;
-
-// public:
-// 	SocketEventHandler disConnectHandler;
-// 	SocketEventHandler timeoutHandler;
-// 	SocketEventHandler errorHandler;
-// 
-// public:
-// 	SocketParseHandler parseHandler;
 
 public:
 	SocketServer();
@@ -44,7 +37,7 @@ public:
 	lw_int32 serv(std::function<void(lw_int32 what)> func);
 
 public:
-	void addTimer(int tid, unsigned int tms, TimerCallback func);
+	int addTimer(int tid, unsigned int tms, const TimerCallback& func);
 	void removeTimer(int tid);
 
 public:
@@ -59,7 +52,6 @@ protected:
 	virtual int onEnd() override;
 
 private:
-	SocketTimer* _timer;
 	SocketListener* _listener;
 	SocketProcessor* _processor;
 

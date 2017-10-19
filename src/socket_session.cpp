@@ -1,5 +1,7 @@
 #include "socket_session.h"
 
+#include <memory>
+
 #if defined(WIN32) || defined(_WIN32)
 #include <winsock2.h>
 #else
@@ -14,11 +16,11 @@
 #include "net_iobuffer.h"
 #include "socket_config.h"
 #include "socket_processor.h"
+#include "socket_timer.h"
+#include "socket_heartbeat.h"
 
 #include "log4z.h"
-#include <memory>
-#include "socket_timer.h"
-#include "net_package.h"
+
 
 static int RECV_BUFFER_SIZE	 = 32 * 1024;
 static int SEND_BUFFER_SIZE = 32 * 1024;
@@ -59,26 +61,17 @@ SocketSession::SocketSession(SocketConfig* conf) {
 	this->_c = SESSION_TYPE::none;
 	this->_connected = false;
 	this->_bev = nullptr;
+	this->_processor = nullptr;
 	this->_conf = conf;
 	this->_iobuffer = new NetIOBuffer;
-	this->_timer = new SocketTimer;
+	this->_heartbeat = new SocketHeartbeat(this);
 }
 
 SocketSession::~SocketSession() {
-
 	this->destroy();
-
-	if (this->_conf != nullptr) {
-		SAFE_DELETE(this->_conf);
-	}
-
-	if (this->_iobuffer != nullptr) {
-		SAFE_DELETE(this->_iobuffer);
-	}
-
-	if (this->_timer != nullptr) {
-		SAFE_DELETE(this->_timer);
-	}
+	SAFE_DELETE(this->_heartbeat);
+	SAFE_DELETE(this->_conf);
+	SAFE_DELETE(this->_iobuffer);
 }
 
 int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd) {
@@ -89,11 +82,15 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 
 	this->_c = c;
 
+	this->_processor = processor;
+
+	this->_heartbeat->create(this->_processor);
+
 	int ret = 0;
 	
 	switch (this->_c) {
 	case SESSION_TYPE::server: {
-		this->_bev = bufferevent_socket_new(processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		if (this->_bev != nullptr) {
 			
 //			{
@@ -122,10 +119,6 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		else {
 			ret = -1;
 		}
-
-		if (this->_connected) {
-			this->_timer->create(processor);
-		}
 	} break;
 	case SESSION_TYPE::client: {
 		struct sockaddr_in saddr;
@@ -134,19 +127,8 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 		saddr.sin_addr.s_addr = inet_addr(this->_conf->getHost().c_str());
 		saddr.sin_port = htons(this->_conf->getPort());
 
-		this->_bev = bufferevent_socket_new(processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+		this->_bev = bufferevent_socket_new(this->_processor->getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
 		if (this->_bev != nullptr) {
-
-//			{
-//				int c0 = bufferevent_set_max_single_write(this->_bev, SEND_BUFFER_SIZE);
-//				int c1 = bufferevent_set_max_single_read(this->_bev, RECV_BUFFER_SIZE);
-//
-//				int d1 = bufferevent_get_max_single_read(this->_bev);
-//				int d2 = bufferevent_get_max_single_write(this->_bev);
-//				int d3 = bufferevent_get_max_to_read(this->_bev);
-//				int d4 = bufferevent_get_max_to_write(this->_bev);
-//			}
-
 			int con = bufferevent_socket_connect(this->_bev, (struct sockaddr *)&saddr, sizeof(saddr));
 			if (con == 0) {
 				bufferevent_setcb(this->_bev, SessionCore::__read_cb, NULL, SessionCore::__event_cb, this);
@@ -180,7 +162,10 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 
 void SocketSession::destroy() {
 	this->_event_callback_map.clear();
-	this->_timer->destroy();
+}
+
+void SocketSession::setAutoHeartBeat(int tms) {
+	this->_heartbeat->setAutoHeartBeat(tms);
 }
 
 bool SocketSession::connected() const {
@@ -271,17 +256,18 @@ void SocketSession::__on_read() {
 }
 
 void SocketSession::__on_parse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
+	int c = this->_heartbeat->parseHandler(this, cmd, buf, bufsize);
+	if (c == 0) {
+		return;
+	}
 
-// 	if (cmd == NET_HEART_BEAT_PING) {
-// 		LOGFMTD("NET_HEART_BEAT_PING: %d", NET_HEART_BEAT_PING);
-// 		this->sendData(NET_HEART_BEAT_PONG, NULL, 0);
-// 		return;
-// 	}
-// 
-// 	if (cmd == NET_HEART_BEAT_PONG) {
-// 		LOGFMTD("NET_HEART_BEAT_PONG: %d", NET_HEART_BEAT_PONG);
-// 		return;
-// 	}
+	if (c == -1) {	// ping package
+
+	}
+
+	if (c == -2) {	// pong package
+
+	}
 
 	SocketRecvHandlerConf conf;
 	if (!_event_callback_map.empty()) {
@@ -305,8 +291,12 @@ void SocketSession::__on_parse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
 }
 
 void SocketSession::__on_event(short ev) {
+
 	if (ev & BEV_EVENT_CONNECTED) {
 		this->_connected = true;
+
+		this->_heartbeat->connectedHandler(this);
+
 		if (this->connectedHandler != nullptr) {
 			this->connectedHandler(this);
 		}
@@ -314,26 +304,41 @@ void SocketSession::__on_event(short ev) {
 	}
 
 	if (ev & BEV_EVENT_READING) {
+
+		this->_heartbeat->errorHandler(this);
+
 		if (this->errorHandler != nullptr) {
 			this->errorHandler(this);
 		}	
 	}
 	else if (ev & BEV_EVENT_WRITING) {
+		
+		this->_heartbeat->errorHandler(this);
+
 		if (this->errorHandler != nullptr) {
 			this->errorHandler(this);
-		}	
+		}
 	}
 	else if (ev & BEV_EVENT_EOF) {
+
+		this->_heartbeat->disConnectHandler(this);
+
 		if (this->disConnectHandler != nullptr) {
 			this->disConnectHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_TIMEOUT) {
+
+		this->_heartbeat->timeoutHandler(this);
+
 		if (this->timeoutHandler != nullptr) {
 			this->timeoutHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_ERROR) {
+
+		this->_heartbeat->errorHandler(this);
+
 		if (this->errorHandler != nullptr) {
 			this->errorHandler(this);
 		}

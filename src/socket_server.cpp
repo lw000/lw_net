@@ -29,17 +29,16 @@
 #include "socket_config.h"
 
 #include "log4z.h"
+#include "socket_heartbeat.h"
 
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
 	this->_processor = new SocketProcessor;
 	this->_listener = new SocketListener;
-	this->_timer = new SocketTimer;
 }
 
 SocketServer::~SocketServer()
 {
-	SAFE_DELETE(this->_timer);
 	SAFE_DELETE(this->_listener);
 	SAFE_DELETE(this->_processor);
 }
@@ -49,9 +48,6 @@ bool SocketServer::create(SocketConfig* config)
 	bool ret = this->_processor->create(true);
 	if (ret) {
 		ret = this->_listener->create(_processor, config);
-		if (ret) {
-			int c = this->_timer->create(_processor);
-		}
 	}
 	
 	return ret;
@@ -65,12 +61,13 @@ void SocketServer::destroy()
 	}
 }
 
-void SocketServer::addTimer(int tid, unsigned int tms, TimerCallback func) {
-	int c = this->_timer->add(tid, tms, func);
+int SocketServer::addTimer(int tid, unsigned int tms, const TimerCallback& func) {
+	int c = this->_processor->addTimer(tid, tms, func);
+	return c;
 }
 
 void SocketServer::removeTimer(int tid) {
-	this->_timer->remove(tid);
+	this->_processor->removeTimer(tid);
 }
 
 int SocketServer::close()
@@ -82,6 +79,7 @@ std::string SocketServer::debug()
 {
 	return std::string("SocketServer");
 }
+
 
 lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 {
@@ -102,6 +100,8 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 		if (this->listenHandler != nullptr) {
 
 			ServerSession* pSession = (ServerSession*)this->listenHandler(this->_processor, fd);
+			
+			pSession->setAutoHeartBeat();
 
 			char hostBuf[NI_MAXHOST];
 			char portBuf[64];

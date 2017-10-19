@@ -30,7 +30,7 @@ public:
 	virtual void destroy() = 0;
 
 public:
-	virtual int add(int tid, int tms, TimerCallback func) = 0;
+	virtual int add(int tid, int tms, const TimerCallback& func) = 0;
 	virtual void remove(int tid) = 0;
 
 protected:

@@ -6,6 +6,10 @@
 #include <event2/util.h>
 #include <event2/thread.h>
 
+
+#include "socket_timer.h"
+#include "common_marco.h"
+
 void SocketProcessor::use_threads()
 {
 #if defined(__WIN32) || defined(WIN32)
@@ -17,11 +21,13 @@ void SocketProcessor::use_threads()
 
 SocketProcessor::SocketProcessor() : _base(nullptr)
 {
-	
+	this->_timer = new SocketTimer;
 }
 
 SocketProcessor::~SocketProcessor()
 {
+	SAFE_DELETE(this->_timer);
+
 	if (this->_base != nullptr)
 	{
 		event_base_free(this->_base);
@@ -50,18 +56,32 @@ bool SocketProcessor::create(bool enableServer) {
 #else
 		this->_base = event_base_new();
 #endif
+		int c = 0;
+		c = this->_timer->create(this);
 	}
 
 	return true;
 }
 
 void SocketProcessor::destroy() {
-
+	if (this->_timer != nullptr)
+	{
+		this->_timer->destroy();
+	}
 }
 
 struct event_base* SocketProcessor::getBase()
 { 
 	return this->_base;
+}
+
+int SocketProcessor::addTimer(int tid, unsigned int tms, const TimerCallback& func) {
+	int c = this->_timer->add(tid, tms, func);
+	return c;
+}
+
+void SocketProcessor::removeTimer(int tid) {
+	this->_timer->remove(tid);
 }
 
 int SocketProcessor::dispatch()
@@ -76,9 +96,9 @@ int SocketProcessor::loopbreak()
 	return r;
 }
 
-int SocketProcessor::loopexit() 
+int SocketProcessor::loopexit(int tms)
 {
-	struct timeval delay = {0, 5000000};
+	struct timeval delay = { 0, tms*1000};
 	int r = event_base_loopexit(this->_base, &delay);
 	return r;
 }

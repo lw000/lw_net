@@ -5,8 +5,10 @@
 
 #include "common_type.h"
 #include "socket_object.h"
+#include "socket_timer.h"
 
 struct event_base;
+class SocketTimer;
 
 class SocketProcessor : public SocketObject
 {
@@ -25,11 +27,15 @@ public:
 	struct event_base* getBase();
 
 public:
+	int addTimer(int tid, unsigned int tms, const TimerCallback& func);
+	void removeTimer(int tid);
+
+public:
 	int dispatch();
 
 public:
 	int loopbreak();
-	int loopexit();
+	int loopexit(int tms = 1000);
 
 public:
 	virtual std::string debug() override;
@@ -37,6 +43,7 @@ public:
 
 private:
 	struct event_base* _base;
+	SocketTimer* _timer;
 };
 
 

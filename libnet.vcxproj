@@ -33,6 +33,7 @@
     <ClCompile Include="./src/socket_timer.cpp" />
     <ClCompile Include="src\client_session.cpp" />
     <ClCompile Include="src\server_session.cpp" />
+    <ClCompile Include="src\socket_heartbeat.cpp" />
     <ClCompile Include="src\socket_object.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +53,7 @@
     <ClInclude Include="include\nanomsgcpp_socket.h" />
     <ClInclude Include="include\server_session.h" />
     <ClInclude Include="include\socket_config.h" />
+    <ClInclude Include="include\socket_heartbeat.h" />
     <ClInclude Include="include\socket_object.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

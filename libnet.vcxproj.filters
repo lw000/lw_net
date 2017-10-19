@@ -58,6 +58,9 @@
     <ClCompile Include="src\server_session.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\socket_heartbeat.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="./include/http_server.h">
@@ -109,6 +112,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\server_session.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\socket_heartbeat.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

@@ -16,10 +16,9 @@ class AbstractSocketClientHandler;
 class AbstractSocketServerHandler;
 
 typedef std::function<bool(lw_char8* buf, lw_int32 bufsize)> SocketRecvHandler;
-
 typedef std::function<void(SocketSession* session)> SocketEventHandler;
 typedef std::function<SocketSession*(SocketProcessor* processor, evutil_socket_t fd)> SocketListenerHandler;
-typedef std::function<void(SocketSession* session, lw_int32 cmd, lw_char8* buf, lw_int32 bufsize)> SocketParseHandler;
+typedef std::function<int (SocketSession* session, lw_int32 cmd, lw_char8* buf, lw_int32 bufsize)> SocketParseDataHandler;
 
 #define SOCKET_EVENT_SELECTOR(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, ##__VA_ARGS__)
 #define SOCKET_LISTENER_SELECTOR_2(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, std::placeholders::_2, ##__VA_ARGS__)

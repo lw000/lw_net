@@ -14,6 +14,7 @@ class NetIOBuffer;
 class SocketConfig;
 class SocketProcessor;
 class SocketTimer;
+class SocketHeartbeat;
 
 enum SESSION_TYPE
 {
@@ -27,11 +28,14 @@ class SocketSession : public SocketObject
 	friend class SessionCore;
 
 public:
+	SocketHeartbeat* _heartbeat;
+
+public:
 	SocketEventHandler connectedHandler;
 	SocketEventHandler disConnectHandler;
 	SocketEventHandler timeoutHandler;
 	SocketEventHandler errorHandler;
-	SocketParseHandler parseHandler;
+	SocketParseDataHandler parseHandler;
 
 public:
 	SocketSession(SocketConfig* conf);
@@ -40,6 +44,9 @@ public:
 public:
 	int create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd = -1);
 	void destroy();
+
+public:
+	void setAutoHeartBeat(int tms = 10000);
 
 public:
 	bool connected() const;
@@ -65,7 +72,7 @@ protected:
 	bool _connected;
 	SocketConfig* _conf;
 	NetIOBuffer* _iobuffer;
-	SocketTimer* _timer;
+	SocketProcessor* _processor;
 	struct bufferevent* _bev;
 	std::unordered_map<lw_int32, SocketRecvHandlerConf> _event_callback_map;
 };
