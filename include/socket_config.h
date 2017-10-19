@@ -8,6 +8,7 @@ class SocketConfig : public SocketObject
 {
 public:
 	SocketConfig() {
+		this->_port = -1;
 	}
 
 	SocketConfig(const std::string& host, int port) {

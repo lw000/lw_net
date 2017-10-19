@@ -5,6 +5,13 @@
 #include <vector>
 #include <algorithm>
 
+
+#ifdef WIN32
+#include <ws2tcpip.h>
+#else
+#include <sys/socket.h>
+#endif // _WIN32
+
 #include <event2/event.h>
 #include <event2/event_struct.h>
 #include <event2/buffer.h>
@@ -12,11 +19,7 @@
 #include <event2/listener.h>
 #include <event2/thread.h>
 
-#ifdef WIN32
-#include <ws2tcpip.h>
-#else
-#include <sys/socket.h>
-#endif // _WIN32
+#include "net_package.h"
 
 #include "common_marco.h"
 #include "server_session.h"
@@ -25,8 +28,7 @@
 #include "socket_listener.h"
 #include "socket_config.h"
 
-#include <log4z.h>
-#include "net_package.h"
+#include "log4z.h"
 
 SocketServer::SocketServer() : _onFunc(nullptr)
 {
@@ -96,59 +98,68 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 	this->_onFunc = func;
 
 	_listener->listenerCB([this](evutil_socket_t fd, struct sockaddr *sa, int socklen) {
-		
-		ServerSession* pSession = new ServerSession(new SocketConfig);
 
-		pSession->disConnectHandler = [this](SocketSession* session) {
-			this->disConnectHandler(session);
-		};
+		if (this->listenHandler != nullptr) {
 
-		pSession->timeoutHandler = [this](SocketSession* session) {
-			this->timeoutHandler(session);
-		};
+			ServerSession* pSession = (ServerSession*)this->listenHandler(this->_processor, fd);
 
-		pSession->errorHandler = [this](SocketSession* session) {
-			this->errorHandler(session);
-		};
-
-		pSession->parseHandler = [this](SocketSession* session, lw_int32 cmd,
-			lw_char8* buf, lw_int32 bufsize) {
-
-			if (cmd == NET_HEART_BEAT_PING) {
-				LOGFMTD("NET_HEART_BEAT_PING: %d", NET_HEART_BEAT_PING);
-				session->sendData(NET_HEART_BEAT_PONG, NULL, 0);
-				return;
-			}
-
-			this->parseHandler(session, cmd, buf, bufsize);
-		};
-
-		int r = pSession->create(this->_processor, fd);
-		if (r == 0)
-		{
 			char hostBuf[NI_MAXHOST];
 			char portBuf[64];
 			getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
-
 			pSession->getConf()->setHost(hostBuf);
 			pSession->getConf()->setPort(std::stoi(portBuf));
 
-			if (this->listenHandler != nullptr) {
-				addTimer(0, 30000, [pSession](int tid, unsigned int tms) -> bool {
-					pSession->sendData(NET_HEART_BEAT_PONG, NULL, 0);
-
-					return true;
-				});
-
-				this->listenHandler(pSession);
-			}
+			LOGFMTD("%s", pSession->debug().c_str());
 		}
-		else
-		{
-			pSession->destroy();
-			SAFE_DELETE(pSession);
-			LOGD("error constructing ServerSession!");
-		}
+
+// 		ServerSession* pSession = new ServerSession(new SocketConfig);
+// 
+// 		pSession->disConnectHandler = [this](SocketSession* session) {
+// 			this->disConnectHandler(session);
+// 		};
+// 
+// 		pSession->timeoutHandler = [this](SocketSession* session) {
+// 			this->timeoutHandler(session);
+// 		};
+// 
+// 		pSession->errorHandler = [this](SocketSession* session) {
+// 			this->errorHandler(session);
+// 		};
+// 
+// 		pSession->parseHandler = [this](SocketSession* session, lw_int32 cmd,
+// 			lw_char8* buf, lw_int32 bufsize) {
+// 
+// 			if (cmd == NET_HEART_BEAT_PING) {
+// 				LOGFMTD("NET_HEART_BEAT_PING: %d", NET_HEART_BEAT_PING);
+// 				session->sendData(NET_HEART_BEAT_PONG, NULL, 0);
+// 				return;
+// 			}
+// 
+// 			this->parseHandler(session, cmd, buf, bufsize);
+// 		};
+// 
+// 		int r = pSession->create(this->_processor, fd);
+// 		if (r == 0)
+// 		{
+// 			char hostBuf[NI_MAXHOST];
+// 			char portBuf[64];
+// 			getnameinfo(sa, socklen, hostBuf, sizeof(hostBuf), portBuf, sizeof(portBuf), NI_NUMERICHOST | NI_NUMERICSERV);
+// 
+// 			pSession->getConf()->setHost(hostBuf);
+// 			pSession->getConf()->setPort(std::stoi(portBuf));
+// 
+// 			if (this->listenHandler != nullptr) {
+// 
+// 				this->listenHandler(this->_processor, fd);
+// 			}
+// 		}
+// 		else
+// 		{
+// 			pSession->destroy();
+// 			SAFE_DELETE(pSession);
+// 			LOGD("error constructing ServerSession!");
+// 		}
+
 	});
 
 	_listener->listenerErrorCB([this](void * userdata, int er) {

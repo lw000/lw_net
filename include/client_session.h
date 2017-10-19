@@ -11,9 +11,6 @@ class SocketConfig;
 class ClientSession : public SocketSession
 {
 public:
-	int session_id;
-
-public:
 	ClientSession(SocketConfig* conf);
 	virtual ~ClientSession();
 

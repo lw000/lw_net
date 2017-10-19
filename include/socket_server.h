@@ -22,15 +22,15 @@ class SocketListener;
 class SocketServer : public SocketObject, public Threadable
 {
 public:
-	SocketEventHandler listenHandler;
+	SocketListenerHandler listenHandler;
 
-public:
-	SocketEventHandler disConnectHandler;
-	SocketEventHandler timeoutHandler;
-	SocketEventHandler errorHandler;
-
-public:
-	SocketParseHandler parseHandler;
+// public:
+// 	SocketEventHandler disConnectHandler;
+// 	SocketEventHandler timeoutHandler;
+// 	SocketEventHandler errorHandler;
+// 
+// public:
+// 	SocketParseHandler parseHandler;
 
 public:
 	SocketServer();

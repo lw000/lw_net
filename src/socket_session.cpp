@@ -9,7 +9,6 @@
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
-#include <event2/util.h>
 
 #include "common_marco.h"
 #include "net_iobuffer.h"
@@ -44,7 +43,7 @@ public:
 		}
 
 		int er = EVUTIL_SOCKET_ERROR();
-		// 10061 ����Ŀ�����������ܾ����޷����ӡ� 
+		// 10061 Unable to connect because the target computer actively refused
 		session->destroy();
 		delete session;
 	}
@@ -66,6 +65,9 @@ SocketSession::SocketSession(SocketConfig* conf) {
 }
 
 SocketSession::~SocketSession() {
+
+	this->destroy();
+
 	if (this->_conf != nullptr) {
 		SAFE_DELETE(this->_conf);
 	}
@@ -192,7 +194,7 @@ SocketConfig* SocketSession::getConf() const {
 std::string SocketSession::debug() {
 	char buf[512];
 	evutil_socket_t fd = bufferevent_getfd(this->_bev);
-	sprintf(buf, "fd:%d, c:%d, connected:%d, conf:%d", fd, this->_c, this->_connected, this->_conf->debug().c_str());
+	sprintf(buf, "fd:%d, c:%d, connected:%d, conf:%s", fd, this->_c, this->_connected, this->_conf->debug().c_str());
 	return std::string(buf);
 }
 

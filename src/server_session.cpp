@@ -14,7 +14,7 @@ ServerSession::ServerSession(SocketConfig* conf) : SocketSession(conf) {
 }
 
 ServerSession::~ServerSession() {
-	
+	this->destroy();
 }
 
 int ServerSession::create(SocketProcessor* processor, evutil_socket_t fd) {
