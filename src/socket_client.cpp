@@ -37,32 +37,35 @@ bool SocketClient::create(SocketConfig* conf)
 {						
 	bool ret = this->_processor->create(false);
 	if (ret) {
-		this->_session = new ClientSession(conf);
-		this->_session->connectedHandler = [this](SocketSession* session) {
+		this->_session = new ClientSession();
+		if (this->_session != nullptr) {
+			
+			int r = this->_session->create(this->_processor, conf);
 
-			this->connectedHandler(session);
-		};
+			this->_session->onConnectedHandler = [this](SocketSession* session) {
+				this->onConnectedHandler(session);
+			};
 
-		this->_session->disConnectHandler = [this](SocketSession* session) {
-			this->disConnectHandler(session);
-		};
+			this->_session->onDisconnectHandler = [this](SocketSession* session) {
+				this->onDisconnectHandler(session);
+			};
 
-		this->_session->timeoutHandler = [this](SocketSession* session){
-			this->timeoutHandler(session);
-		}; 
+			this->_session->onTimeoutHandler = [this](SocketSession* session){
+				this->onTimeoutHandler(session);
+			};
 
-		this->_session->errorHandler = [this](SocketSession* session) {
+			this->_session->onErrorHandler = [this](SocketSession* session) {
+				this->onErrorHandler(session);
+			};
 
-			this->errorHandler(session);
-		};
+			this->_session->onDataParseHandler = [this](SocketSession* session, lw_int32 cmd,
+				lw_char8* buf, lw_int32 bufsize) -> int {
+				int c = this->onDataParseHandler(session, cmd, buf, bufsize);
+				return c;
+			};
 
-		this->_session->parseHandler = [this](SocketSession* session, lw_int32 cmd,
-			lw_char8* buf, lw_int32 bufsize) -> int {
-			int c = this->parseHandler(session, cmd, buf, bufsize);
-			return c;
-		};
-
-		this->start();
+			this->start();
+		}	
 	}
 
 	return true;
@@ -117,14 +120,8 @@ int SocketClient::onStart() {
 }
 
 int SocketClient::onRun() {
-	int r = this->_session->create(this->_processor);
-	if (r == 0)
-	{
-		int r = this->_processor->dispatch();
-		LOGFMTD("dispatch r = %d", r);
-	}
-
-	LOGFMTD("SocketClient::onRun() r = %d", r);
+	int r = this->_processor->dispatch();
+	LOGFMTD("dispatch r = %d", r);
 
 	return 0;
 }

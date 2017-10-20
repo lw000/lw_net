@@ -28,21 +28,18 @@ class SocketSession : public SocketObject
 	friend class SessionCore;
 
 public:
-	SocketHeartbeat* _heartbeat;
+	SocketEventHandler onConnectedHandler;
+	SocketEventHandler onDisconnectHandler;
+	SocketEventHandler onTimeoutHandler;
+	SocketEventHandler onErrorHandler;
+	SocketDataParseHandler onDataParseHandler;
 
 public:
-	SocketEventHandler connectedHandler;
-	SocketEventHandler disConnectHandler;
-	SocketEventHandler timeoutHandler;
-	SocketEventHandler errorHandler;
-	SocketParseDataHandler parseHandler;
-
-public:
-	SocketSession(SocketConfig* conf);
+	SocketSession();
 	virtual ~SocketSession();
 
 public:
-	int create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd = -1);
+	int create(SESSION_TYPE c, SocketProcessor* processor, SocketConfig* conf, evutil_socket_t fd = -1);
 	void destroy();
 
 public:
@@ -59,7 +56,7 @@ public:
 
 public:
 	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize);
-	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, const SocketRecvHandlerConf& cb);
+	lw_int32 sendData(lw_int32 cmd, void* object, lw_int32 objectSize, const SendDataCallback& cb);
 
 private:
 	void __on_read();
@@ -70,11 +67,12 @@ private:
 protected:
 	SESSION_TYPE _c;	//session¿‡–Õ
 	bool _connected;
+	SocketHeartbeat* _heartbeat;
 	SocketConfig* _conf;
 	NetIOBuffer* _iobuffer;
 	SocketProcessor* _processor;
 	struct bufferevent* _bev;
-	std::unordered_map<lw_int32, SocketRecvHandlerConf> _event_callback_map;
+	std::unordered_map<lw_int32, SendDataCallback> _event_callback_map;
 };
 
 

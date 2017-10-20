@@ -13,7 +13,7 @@ SocketHeartbeat::SocketHeartbeat(SocketSession* session) : _session(session), _e
 	this->_keepaliveinterval = 3;
 	this->_processor = nullptr;
 
-	this->connectedHandler = [this](SocketSession* session)
+	this->onConnectedHandler = [this](SocketSession* session)
 	{
 		if (!this->_enabled) return;
 
@@ -23,28 +23,28 @@ SocketHeartbeat::SocketHeartbeat(SocketSession* session) : _session(session), _e
 		});
 	};
 
-	this->disConnectHandler = [this](SocketSession* session)
+	this->onDisconnectHandler = [this](SocketSession* session)
 	{
 		if (!this->_enabled) return;
 
 		this->_processor->removeTimer(0);
 	};
 
-	this->timeoutHandler = [this](SocketSession* session)
+	this->onTimeoutHandler = [this](SocketSession* session)
 	{
 		if (!this->_enabled) return;
 
 		this->_processor->removeTimer(0);
 	};
 
-	this->errorHandler = [this](SocketSession* session)
+	this->onErrorHandler = [this](SocketSession* session)
 	{
 		if (!this->_enabled) return;
 
 		this->_processor->removeTimer(0);
 	};
 
-	this->parseHandler = [this](SocketSession* session, lw_int32 cmd, lw_char8* buf, lw_int32 bufsize) -> int
+	this->onDataParseHandler = [this](SocketSession* session, lw_int32 cmd, lw_char8* buf, lw_int32 bufsize) -> int
 	{
 		if (!this->_enabled) return 0;
 

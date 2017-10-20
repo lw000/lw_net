@@ -43,11 +43,11 @@ SocketServer::~SocketServer()
 	SAFE_DELETE(this->_processor);
 }
 
-bool SocketServer::create(SocketConfig* config)
+bool SocketServer::create(SocketConfig* conf)
 {
 	bool ret = this->_processor->create(true);
 	if (ret) {
-		ret = this->_listener->create(_processor, config);
+		ret = this->_listener->create(_processor, conf);
 	}
 	
 	return ret;

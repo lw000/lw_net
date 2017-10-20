@@ -46,7 +46,6 @@ protected:
 private:
 	SocketProcessor* _processor;
 	SocketConfig* _config;
-	struct event_base* _base;
 	struct evhttp *_htpServ;
 
 private:

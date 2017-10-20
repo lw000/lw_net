@@ -18,15 +18,15 @@ class SocketHeartbeat;
 class SocketClient : public Object, public Threadable
 {
 public:
-	SocketEventHandler connectedHandler;
+	SocketEventHandler onConnectedHandler;
 
 public:
-	SocketEventHandler disConnectHandler;
-	SocketEventHandler timeoutHandler;
-	SocketEventHandler errorHandler;
+	SocketEventHandler onDisconnectHandler;
+	SocketEventHandler onTimeoutHandler;
+	SocketEventHandler onErrorHandler;
 
 public:
-	SocketParseDataHandler parseHandler;
+	SocketDataParseHandler onDataParseHandler;
 
 public:
 	SocketClient();

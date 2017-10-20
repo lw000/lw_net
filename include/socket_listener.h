@@ -22,7 +22,7 @@ public:
 	virtual ~SocketListener();
 
 public:
-	bool create(SocketProcessor* processor, SocketConfig* config);
+	bool create(SocketProcessor* processor, SocketConfig* conf);
 	void destroy();
 
 public:
@@ -37,7 +37,7 @@ private:
 	void __listener_error_cb(struct evconnlistener *);
 
 private:
-	SocketConfig* _config;
+	SocketConfig* _conf;
 	struct evconnlistener* _listener;
 	std::function<void(evutil_socket_t fd, struct sockaddr *sa, int socklen)> _on_listener_func;
 	std::function<void(void * userdata, int err)> _on_listener_error_func;

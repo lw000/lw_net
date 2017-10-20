@@ -18,11 +18,11 @@ private:
 	SocketProcessor* _processor;
 
 public:
-	SocketEventHandler connectedHandler;
-	SocketEventHandler disConnectHandler;
-	SocketEventHandler timeoutHandler;
-	SocketEventHandler errorHandler;
-	SocketParseDataHandler parseHandler;
+	SocketEventHandler onConnectedHandler;
+	SocketEventHandler onDisconnectHandler;
+	SocketEventHandler onTimeoutHandler;
+	SocketEventHandler onErrorHandler;
+	SocketDataParseHandler onDataParseHandler;
 
 public:
 	SocketHeartbeat(SocketSession* session);

@@ -21,7 +21,6 @@
 
 #include "log4z.h"
 
-
 static int RECV_BUFFER_SIZE	 = 32 * 1024;
 static int SEND_BUFFER_SIZE = 32 * 1024;
 
@@ -40,14 +39,6 @@ public:
 	static void __event_cb(struct bufferevent *bev, short ev, void *userdata) {
 		SocketSession *session = (SocketSession*)userdata;
 		session->__on_event(ev);
-		if (ev & BEV_EVENT_CONNECTED) {
-			return;
-		}
-
-		int er = EVUTIL_SOCKET_ERROR();
-		// 10061 Unable to connect because the target computer actively refused
-		session->destroy();
-		delete session;
 	}
 
 	static void __on_data_parse_cb(lw_int32 cmd, char* buf, lw_int32 bufsize, void* userdata) {
@@ -57,12 +48,12 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-SocketSession::SocketSession(SocketConfig* conf) {
+SocketSession::SocketSession() {
 	this->_c = SESSION_TYPE::none;
 	this->_connected = false;
 	this->_bev = nullptr;
+	this->_conf = nullptr;
 	this->_processor = nullptr;
-	this->_conf = conf;
 	this->_iobuffer = new NetIOBuffer;
 	this->_heartbeat = new SocketHeartbeat(this);
 }
@@ -74,7 +65,7 @@ SocketSession::~SocketSession() {
 	SAFE_DELETE(this->_iobuffer);
 }
 
-int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_socket_t fd) {
+int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, SocketConfig* conf, evutil_socket_t fd) {
 	if (processor == nullptr) {
 		LOGD("this->_processor is nullptr");
 		return -1;
@@ -83,6 +74,8 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, evutil_soc
 	this->_c = c;
 
 	this->_processor = processor;
+
+	this->_conf = conf;
 
 	this->_heartbeat->create(this->_processor);
 
@@ -199,15 +192,15 @@ lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize
 	return c;
 }
 
-lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize, const SocketRecvHandlerConf& cb) {
+lw_int32 SocketSession::sendData(lw_int32 cmd, void* object, lw_int32 objectSize, const SendDataCallback& cb) {
 	if (!this->_connected) {
 		LOGFMTD("network is not connected.");
 		return -1;
 	}
 		
-	std::unordered_map<lw_int32, SocketRecvHandlerConf>::iterator iter = this->_event_callback_map.find(cb.recvcmd);
+	std::unordered_map<lw_int32, SendDataCallback>::iterator iter = this->_event_callback_map.find(cb.recvcmd);
 	if (iter == _event_callback_map.end()) {
-		this->_event_callback_map.insert(std::pair<lw_int32, SocketRecvHandlerConf>(cb.recvcmd, cb));
+		this->_event_callback_map.insert(std::pair<lw_int32, SendDataCallback>(cb.recvcmd, cb));
 	}
 	else {
 		iter->second = cb;
@@ -256,7 +249,7 @@ void SocketSession::__on_read() {
 }
 
 void SocketSession::__on_parse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
-	int c = this->_heartbeat->parseHandler(this, cmd, buf, bufsize);
+	int c = this->_heartbeat->onDataParseHandler(this, cmd, buf, bufsize);
 	if (c == 0) {
 		return;
 	}
@@ -269,7 +262,7 @@ void SocketSession::__on_parse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
 
 	}
 
-	SocketRecvHandlerConf conf;
+	SendDataCallback conf;
 	if (!_event_callback_map.empty()) {
 		conf = this->_event_callback_map.at(cmd);
 	}
@@ -284,8 +277,8 @@ void SocketSession::__on_parse(lw_int32 cmd, char* buf, lw_int32 bufsize) {
 	}
 
 	if (goon) {
-		if (this->parseHandler != nullptr) {
-			this->parseHandler(this, cmd, buf, bufsize);
+		if (this->onDataParseHandler != nullptr) {
+			this->onDataParseHandler(this, cmd, buf, bufsize);
 		}
 	}
 }
@@ -295,56 +288,63 @@ void SocketSession::__on_event(short ev) {
 	if (ev & BEV_EVENT_CONNECTED) {
 		this->_connected = true;
 
-		this->_heartbeat->connectedHandler(this);
+		this->_heartbeat->onConnectedHandler(this);
 
-		if (this->connectedHandler != nullptr) {
-			this->connectedHandler(this);
+		if (this->onConnectedHandler != nullptr) {
+			this->onConnectedHandler(this);
 		}
 		return;
 	}
 
 	if (ev & BEV_EVENT_READING) {
 
-		this->_heartbeat->errorHandler(this);
+		this->_heartbeat->onErrorHandler(this);
 
-		if (this->errorHandler != nullptr) {
-			this->errorHandler(this);
+		if (this->onErrorHandler != nullptr) {
+			this->onErrorHandler(this);
 		}	
 	}
 	else if (ev & BEV_EVENT_WRITING) {
 		
-		this->_heartbeat->errorHandler(this);
+		this->_heartbeat->onErrorHandler(this);
 
-		if (this->errorHandler != nullptr) {
-			this->errorHandler(this);
+		if (this->onErrorHandler != nullptr) {
+			this->onErrorHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_EOF) {
 
-		this->_heartbeat->disConnectHandler(this);
+		this->_heartbeat->onDisconnectHandler(this);
 
-		if (this->disConnectHandler != nullptr) {
-			this->disConnectHandler(this);
+		if (this->onDisconnectHandler != nullptr) {
+			this->onDisconnectHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_TIMEOUT) {
 
-		this->_heartbeat->timeoutHandler(this);
+		this->_heartbeat->onTimeoutHandler(this);
 
-		if (this->timeoutHandler != nullptr) {
-			this->timeoutHandler(this);
+		if (this->onTimeoutHandler != nullptr) {
+			this->onTimeoutHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_ERROR) {
 
-		this->_heartbeat->errorHandler(this);
+		this->_heartbeat->onErrorHandler(this);
 
-		if (this->errorHandler != nullptr) {
-			this->errorHandler(this);
+		if (this->onErrorHandler != nullptr) {
+			this->onErrorHandler(this);
 		}
 	}
 
 	this->_connected = false;
 /*	bufferevent_free(this->_bev);*/
 	this->_bev = nullptr;
+
+	int errcode = EVUTIL_SOCKET_ERROR();
+	const char* errstr = evutil_socket_error_to_string(errcode);
+	// 10061 Unable to connect because the target computer actively refused
+	LOGFMTD("__event_cb: %s", errstr);
+
+	this->_processor->loopexit();
 }

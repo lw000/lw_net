@@ -8,15 +8,15 @@
 #include "log4z.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-ClientSession::ClientSession(SocketConfig* conf) : SocketSession(conf) {
+ClientSession::ClientSession() {
 }
 
 ClientSession::~ClientSession() {
 
 }
 
-int ClientSession::create(SocketProcessor* processor) {
-	int c = SocketSession::create(SESSION_TYPE::client, processor);
+int ClientSession::create(SocketProcessor* processor, SocketConfig* conf) {
+	int c = SocketSession::create(SESSION_TYPE::client, processor, conf);
 	return c;
 }
 

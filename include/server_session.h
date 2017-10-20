@@ -13,11 +13,11 @@ class SocketConfig;
 class ServerSession : public SocketSession
 {
 public:
-	ServerSession(SocketConfig* conf);
+	ServerSession();
 	virtual ~ServerSession();
 
 public:
-	int create(SocketProcessor* processor, evutil_socket_t fd);
+	int create(SocketProcessor* processor, SocketConfig* conf, evutil_socket_t fd);
 	void destroy();
 };
 

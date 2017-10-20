@@ -11,11 +11,11 @@ class SocketConfig;
 class ClientSession : public SocketSession
 {
 public:
-	ClientSession(SocketConfig* conf);
+	ClientSession();
 	virtual ~ClientSession();
 
 public:
-	int create(SocketProcessor* processor);
+	int create(SocketProcessor* processor, SocketConfig* conf);
 	void destroy();
 };
 

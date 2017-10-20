@@ -31,7 +31,7 @@ public:
 	}
 };
 
-SocketListener::SocketListener() : _listener(nullptr), _config(nullptr)
+SocketListener::SocketListener() : _listener(nullptr), _conf(nullptr)
 {
 
 }
@@ -41,12 +41,12 @@ SocketListener::~SocketListener()
 
 }
 
-bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
+bool SocketListener::create(SocketProcessor* processor, SocketConfig* conf)
 {	
-	this->_config = config;
+	this->_conf = conf;
 	struct sockaddr_in sin;
 	sin.sin_family = AF_INET;
-	std::string host = this->_config->getHost();
+	std::string host = this->_conf->getHost();
 	if (host.empty()) {
 		sin.sin_addr.s_addr = htonl(0);
 	}
@@ -54,7 +54,7 @@ bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 		sin.sin_addr.s_addr = inet_addr(host.c_str());
 	}
 
-	int port = this->_config->getPort();
+	int port = this->_conf->getPort();
 	if (port > 0) {
 		sin.sin_port = htons(port);
 	}
@@ -78,8 +78,8 @@ bool SocketListener::create(SocketProcessor* processor, SocketConfig* config)
 
 void SocketListener::destroy()
 {
-	if (this->_config != nullptr) {
-		SAFE_DELETE(this->_config);
+	if (this->_conf != nullptr) {
+		SAFE_DELETE(this->_conf);
 	}
 
 	if (this->_listener != nullptr)

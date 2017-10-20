@@ -35,7 +35,7 @@ public:
 
 public:
 	int loopbreak();
-	int loopexit(int tms = 1000);
+	int loopexit(int tms = 500);
 
 public:
 	virtual std::string debug() override;

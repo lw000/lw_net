@@ -30,7 +30,7 @@ public:
 	virtual ~SocketServer();
 
 public:
-	bool create(SocketConfig* config);
+	bool create(SocketConfig* conf);
 	void destroy();
 
 public:

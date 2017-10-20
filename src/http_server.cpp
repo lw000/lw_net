@@ -43,6 +43,9 @@
 
 #include "utils.h"
 
+#include "log4z.h"
+#include "common_marco.h"
+
 struct HTTP_METHOD_SIGNATURE
 {
 	std::string sign;
@@ -127,18 +130,13 @@ public:
 
 HttpServer::HttpServer()
 {
-// 	this->port = 0;
-	this->_base = nullptr;
 	this->_htpServ = nullptr;
-
-	_processor = new SocketProcessor;
+	this->_processor = new SocketProcessor;
 }
 
 HttpServer::~HttpServer()
 {
-	if (_processor != nullptr) {
-		delete _processor;
-	}
+	SAFE_DELETE(this->_processor);
 }
 
 lw_int32 HttpServer::create(SocketConfig* config)
@@ -146,64 +144,44 @@ lw_int32 HttpServer::create(SocketConfig* config)
 	if (config == nullptr) {
 		return -1;
 	}
+
 	this->_config = config;
-// 	this->_addr = addr;
-// 	this->port = port;
 
-// 	bool r = _processor->create(true);
-// 	{
-// 		this->_base = _processor->getBase();
-// 	}
+	bool r = this->_processor->create(false);
+	if (r) {
+		this->_htpServ = evhttp_new(this->_processor->getBase());
+		if (!this->_htpServ)
+		{
+			LOGD("couldn't?create?evhttp.?Exiting.\n");
+			return -1;
+		}
 
-// 	struct event_config *cfg = event_config_new();
-// 	//event_config_set_flag(cfg, EVENT_BASE_FLAG_STARTUP_IOCP);
-// 	if (cfg)
-// 	{
-// 		this->_base = event_base_new_with_config(cfg);
-// 		event_config_free(cfg);
-// 	}
+		struct evhttp_bound_socket *handle = evhttp_bind_socket_with_handle(this->_htpServ, this->_config->getHost().c_str(), this->_config->getPort());
+		if (!handle)
+		{
+			LOGFMTD("couldn't?bind?to?port?%d.?exiting.", (int)this->_config->getPort());
+			evhttp_free(this->_htpServ);
+			return -1;
+		}
 
-	this->_base = event_base_new();
+		// 设置超时
+		evhttp_set_timeout(this->_htpServ, 30);
 
-	this->_htpServ = evhttp_new(this->_base);
-	if (!this->_htpServ)
-	{
-		fprintf(stderr, "couldn't?create?evhttp.?Exiting.\n");
-		event_base_free(this->_base);
-		return -1;
-	}
-
-	struct evhttp_bound_socket *handle = evhttp_bind_socket_with_handle(this->_htpServ, this->_config->getHost().c_str(), this->_config->getPort());
-	if (!handle)
-	{
-		fprintf(stderr, "couldn't?bind?to?port?%d.?exiting.\n", (int)this->_config->getPort());
-		evhttp_free(this->_htpServ);
-		event_base_free(this->_base);
-		return -1;
-	}
-
-	// 设置超时
-	evhttp_set_timeout(this->_htpServ, 30);
-
-	/* Extract and display the address we're listening on. */
-	{
-		struct sockaddr_storage ss;
-		evutil_socket_t fd;
-		ev_socklen_t socklen = sizeof(ss);
-		char addrbuf[128];
-		void *inaddr;
-		const char *addr;
-		int got_port = -1;
-		fd = evhttp_bound_socket_get_fd(handle);
-		memset(&ss, 0, sizeof(ss));
+		/* Extract and display the address we're listening on. */
 		do
 		{
+			struct sockaddr_storage ss;
+			memset(&ss, 0, sizeof(ss));
+			ev_socklen_t socklen = sizeof(ss);		
+			evutil_socket_t fd = evhttp_bound_socket_get_fd(handle);
 			if (getsockname(fd, (struct sockaddr *)&ss, &socklen))
 			{
-				perror("getsockname() failed");
+				LOGFMTD("getsockname() failed");
 				break;
 			}
 
+			void *inaddr;
+			int got_port = -1;
 			if (ss.ss_family == AF_INET)
 			{
 				got_port = ntohs(((struct sockaddr_in*)&ss)->sin_port);
@@ -216,18 +194,18 @@ lw_int32 HttpServer::create(SocketConfig* config)
 			}
 			else
 			{
-				fprintf(stderr, "weird address family %d\n", ss.ss_family);
+				LOGFMTD("weird address family %d", ss.ss_family);
 				break;
 			}
-
-			addr = evutil_inet_ntop(ss.ss_family, inaddr, addrbuf, sizeof(addrbuf));
+			char addrbuf[128];
+			const char *addr = evutil_inet_ntop(ss.ss_family, inaddr, addrbuf, sizeof(addrbuf));
 			if (addr != NULL)
 			{
-				fprintf(stdout, "HTTP服务启动完成 [http://%s:%d]\n", addr, got_port);
+				LOGFMTD("HTTP服务启动完成 [http://%s:%d]", addr, got_port);
 			}
 			else
 			{
-				fprintf(stderr, "evutil_inet_ntop failed\n");
+				LOGFMTD("evutil_inet_ntop failed");
 				break;
 			}
 		} while (0);
@@ -284,18 +262,14 @@ int HttpServer::onStart() {
 }
 
 int HttpServer::onRun() {
-
-	int ret = event_base_dispatch(_base);
-	
-//	int ret = _processor->dispatch();
-
+	int c = this->_processor->dispatch();
+	LOGFMTD("dispatch c = %d", c);
 	return 0;
 }
 
 int HttpServer::onEnd() {
 	evhttp_free(this->_htpServ);
-	event_base_free(this->_base);
-	this->_htpServ = NULL;
-	this->_base = NULL;
+	this->_htpServ = nullptr;
+	this->_processor->destroy();
 	return 0;
 }

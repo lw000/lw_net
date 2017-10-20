@@ -86,7 +86,9 @@ void SocketProcessor::removeTimer(int tid) {
 
 int SocketProcessor::dispatch()
 {
-	int r = event_base_dispatch(this->_base);
+	//EVLOOP_NO_EXIT_ON_EMPTY
+	//int r = event_base_dispatch(this->_base);
+	int r = event_base_loop(this->_base, EVLOOP_NO_EXIT_ON_EMPTY);
 	return r;
 }
 
