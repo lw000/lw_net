@@ -89,8 +89,7 @@ public:
 	long long size();
 
 private:
-	///std::mutex _m;
-	lw_fast_lock _m;
+	lw_fast_mutex _m;
 	std::unordered_map<unsigned long, std::queue<Msgdata>> _msg_queue;
 //	std::atomic<long long> _msg_total;
 	long long _msg_total;

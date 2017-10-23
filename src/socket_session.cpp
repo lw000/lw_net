@@ -26,6 +26,22 @@ static int SEND_BUFFER_SIZE = 32 * 1024;
 
 class SessionCore {
 public:
+	static enum bufferevent_filter_result __filter_read_cb(
+	struct evbuffer *src, struct evbuffer *dst, ev_ssize_t dst_limit,
+	enum bufferevent_flush_mode mode, void *ctx) {
+
+
+		return BEV_OK;
+	}
+
+	static enum bufferevent_filter_result __filter_write_cb(
+	struct evbuffer *src, struct evbuffer *dst, ev_ssize_t dst_limit,
+	enum bufferevent_flush_mode mode, void *ctx) {
+
+
+		return BEV_OK;
+	}
+
 	static void __read_cb(struct bufferevent* bev, void* userdata) {
 		SocketSession *session = (SocketSession*)userdata;
 		session->__on_read();
@@ -95,7 +111,9 @@ int SocketSession::create(SESSION_TYPE c, SocketProcessor* processor, SocketConf
 //				int d3 = bufferevent_get_max_to_read(this->_bev);
 //				int d4 = bufferevent_get_max_to_write(this->_bev);
 //			}
-
+			
+//			bufferevent_filter_new(this->_bev, SessionCore::__filter_read_cb, SessionCore::__filter_write_cb, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE, NULL, NULL);
+			
 			bufferevent_setcb(this->_bev, SessionCore::__read_cb, SessionCore::__write_cb, SessionCore::__event_cb, this);
 			bufferevent_enable(this->_bev, EV_READ | EV_WRITE | EV_PERSIST);
 
@@ -287,9 +305,7 @@ void SocketSession::__on_event(short ev) {
 
 	if (ev & BEV_EVENT_CONNECTED) {
 		this->_connected = true;
-
 		this->_heartbeat->onConnectedHandler(this);
-
 		if (this->onConnectedHandler != nullptr) {
 			this->onConnectedHandler(this);
 		}
@@ -297,54 +313,42 @@ void SocketSession::__on_event(short ev) {
 	}
 
 	if (ev & BEV_EVENT_READING) {
-
 		this->_heartbeat->onErrorHandler(this);
-
 		if (this->onErrorHandler != nullptr) {
 			this->onErrorHandler(this);
-		}	
+		}
 	}
-	else if (ev & BEV_EVENT_WRITING) {
-		
+	else if (ev & BEV_EVENT_WRITING) {	
 		this->_heartbeat->onErrorHandler(this);
-
 		if (this->onErrorHandler != nullptr) {
 			this->onErrorHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_EOF) {
-
 		this->_heartbeat->onDisconnectHandler(this);
-
 		if (this->onDisconnectHandler != nullptr) {
 			this->onDisconnectHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_TIMEOUT) {
-
 		this->_heartbeat->onTimeoutHandler(this);
-
 		if (this->onTimeoutHandler != nullptr) {
 			this->onTimeoutHandler(this);
 		}
 	}
 	else if (ev & BEV_EVENT_ERROR) {
-
 		this->_heartbeat->onErrorHandler(this);
-
 		if (this->onErrorHandler != nullptr) {
 			this->onErrorHandler(this);
 		}
 	}
-
 	this->_connected = false;
-/*	bufferevent_free(this->_bev);*/
+
+	bufferevent_free(this->_bev);
 	this->_bev = nullptr;
 
 	int errcode = EVUTIL_SOCKET_ERROR();
 	const char* errstr = evutil_socket_error_to_string(errcode);
 	// 10061 Unable to connect because the target computer actively refused
 	LOGFMTD("__event_cb: %s", errstr);
-
-	this->_processor->loopexit();
 }

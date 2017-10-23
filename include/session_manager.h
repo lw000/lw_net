@@ -24,7 +24,7 @@ public:
 	void restoreCache();
 
 private:
-	lw_fast_lock _lock;
+	lw_fast_mutex _lock;
 	std::list<SocketSession*> _alive;
 	std::list<SocketSession*> _free;
 };

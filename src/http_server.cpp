@@ -145,7 +145,7 @@ lw_int32 HttpServer::create(SocketConfig* config)
 		return -1;
 	}
 
-	this->_config = config;
+/*	this->_config = config;*/
 
 	bool r = this->_processor->create(false);
 	if (r) {
@@ -156,10 +156,10 @@ lw_int32 HttpServer::create(SocketConfig* config)
 			return -1;
 		}
 
-		struct evhttp_bound_socket *handle = evhttp_bind_socket_with_handle(this->_htpServ, this->_config->getHost().c_str(), this->_config->getPort());
+		struct evhttp_bound_socket *handle = evhttp_bind_socket_with_handle(this->_htpServ, config->getHost().c_str(), config->getPort());
 		if (!handle)
 		{
-			LOGFMTD("couldn't?bind?to?port?%d.?exiting.", (int)this->_config->getPort());
+			LOGFMTD("couldn't?bind?to?port?%d.?exiting.", (int)config->getPort());
 			evhttp_free(this->_htpServ);
 			return -1;
 		}

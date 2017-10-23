@@ -18,7 +18,7 @@ bool SessionManager::create() {
 
 void SessionManager::destroy() {
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 		{
 			std::list<SocketSession*>::iterator iter = _alive.begin();
 			for (; iter != _alive.end(); ++iter)
@@ -43,7 +43,7 @@ SocketSession* SessionManager::add(const SocketSession* session)
 {
 	SocketSession* pSession = nullptr;
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 		std::list<SocketSession*>::iterator iter = _alive.begin();
 		for (; iter != _alive.end(); ++iter)
 		{
@@ -84,7 +84,7 @@ SocketSession* SessionManager::add(const SocketSession* session)
 void SessionManager::remove(const SocketSession* session)
 {
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 		SocketSession* pSession = nullptr;
 		std::list<SocketSession*>::iterator iter = _alive.begin();
 		for (; iter != _alive.end(); ++iter)
@@ -107,7 +107,7 @@ void SessionManager::remove(const SocketSession* session)
 void SessionManager::restoreCache()
 {
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 		{
 			std::list<SocketSession*>::iterator iter = _free.begin();
 			for (; iter != _free.end(); ++iter)

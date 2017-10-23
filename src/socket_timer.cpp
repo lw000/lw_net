@@ -285,7 +285,7 @@ private:
 	SocketProcessor* _processor;
 	TIMERS _timers;
 	TimerCallback _on_timer;
-	lw_fast_lock _lock;
+	lw_fast_mutex _lock;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -309,7 +309,7 @@ int TimerLinux::create(SocketProcessor* processor)
 void TimerLinux::destroy()
 {
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 		TIMERS::iterator iter = _timers.begin();
 		while (iter != _timers.end())
 		{
@@ -335,7 +335,7 @@ int TimerLinux::add(int tid, int tms, const TimerCallback& func)
 	int r = 0;
 
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 
 		this->_on_timer = func;
 
@@ -385,7 +385,7 @@ void TimerLinux::remove(int tid)
 	if (tid < 0) return;
 
 	{
-		lw_lock_guard l(&_lock);
+		lw_fast_lock_guard l(&_lock);
 		
 		TIMER_ITEM* ptimer = nullptr;
 		if (!this->_timers.empty()) {

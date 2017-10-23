@@ -125,16 +125,16 @@ public:
 		while (!_quit)
 		{		
 			{
-				lw_lock_guard l(&this->_client->_requestLock);
+				lw_fast_lock_guard l(&this->_client->_requestMutex);
 				if (this->_client->_requestQueue.empty())
 				{
-					this->_client->_requestCond.wait(&this->_client->_requestLock);
+					this->_client->_requestCond.wait(&this->_client->_requestMutex);
 				}
 			}
 
 			if (_quit) {
 				{
-					lw_lock_guard l(&this->_client->_requestLock);
+					lw_fast_lock_guard l(&this->_client->_requestMutex);
 					while (!this->_client->_requestQueue.empty())
 					{
 						HttpRequest *request = this->_client->_requestQueue.front();
@@ -147,7 +147,7 @@ public:
 
 			HttpRequest * request = nullptr;
 			{
-				lw_lock_guard l(&this->_client->_requestLock);
+				lw_fast_lock_guard l(&this->_client->_requestMutex);
 				request = this->_client->_requestQueue.front();
 				this->_client->_requestQueue.pop();
 			}
@@ -283,7 +283,7 @@ SocketProcessor* HttpClient::getProcessor() const {
 
 void HttpClient::add(HttpRequest* request) {
 	{
-		lw_lock_guard l(&_requestLock);
+		lw_fast_lock_guard l(&_requestMutex);
 		_requestQueue.push(request);
 		_requestCond.signal();
 	}
