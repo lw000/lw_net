@@ -43,7 +43,7 @@ public:
 	void destroy();
 
 public:
-	void setAutoHeartBeat(int tms = 10000);
+	void startAutoPing(int tms = 10000);
 
 public:
 	bool connected() const;

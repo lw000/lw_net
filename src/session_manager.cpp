@@ -18,24 +18,24 @@ bool SessionManager::create() {
 
 void SessionManager::destroy() {
 	{
-		lw_fast_lock_guard l(&_lock);
+		lw_fast_lock_guard l(_lock);
 		{
 			std::list<SocketSession*>::iterator iter = _alive.begin();
 			for (; iter != _alive.end(); ++iter)
 			{
-				SocketSession* pUserinfo = (*iter);
-				delete pUserinfo;
+				SocketSession* pSession = (*iter);
+				delete pSession;
 			}
 		}
 
-	{
-		std::list<SocketSession*>::iterator iter = _free.begin();
-		for (; iter != _free.end(); ++iter)
 		{
-			SocketSession* pUserinfo = (*iter);
-			delete pUserinfo;
+			std::list<SocketSession*>::iterator iter = _free.begin();
+			for (; iter != _free.end(); ++iter)
+			{
+				SocketSession* pSession = (*iter);
+				delete pSession;
+			}
 		}
-	}
 	}
 }
 
@@ -43,11 +43,11 @@ SocketSession* SessionManager::add(const SocketSession* session)
 {
 	SocketSession* pSession = nullptr;
 	{
-		lw_fast_lock_guard l(&_lock);
+		lw_fast_lock_guard l(_lock);
 		std::list<SocketSession*>::iterator iter = _alive.begin();
 		for (; iter != _alive.end(); ++iter)
 		{
-			if (session == *iter)
+			if (session == (*iter))
 			{
 				pSession = *iter; break;
 			}
@@ -55,12 +55,10 @@ SocketSession* SessionManager::add(const SocketSession* session)
 
 		if (pSession == nullptr)
 		{
+			if (!_free.empty())
 			{
-				if (!_free.empty())
-				{
-					pSession = _free.front();
-					_free.pop_front();
-				}
+				pSession = _free.front();
+				_free.pop_front();
 			}
 
 			if (pSession == NULL)
@@ -69,7 +67,6 @@ SocketSession* SessionManager::add(const SocketSession* session)
 			}
 
 			*pSession = *session;
-
 			_alive.push_back(const_cast<SocketSession*>(pSession));
 		}
 		else
@@ -84,14 +81,14 @@ SocketSession* SessionManager::add(const SocketSession* session)
 void SessionManager::remove(const SocketSession* session)
 {
 	{
-		lw_fast_lock_guard l(&_lock);
+		lw_fast_lock_guard l(_lock);
 		SocketSession* pSession = nullptr;
 		std::list<SocketSession*>::iterator iter = _alive.begin();
 		for (; iter != _alive.end(); ++iter)
 		{
 			if (pSession == (*iter))
 			{
-				pSession = *iter;
+				pSession = (*iter);
 				_alive.erase(iter);
 				break;
 			}
@@ -107,7 +104,7 @@ void SessionManager::remove(const SocketSession* session)
 void SessionManager::restoreCache()
 {
 	{
-		lw_fast_lock_guard l(&_lock);
+		lw_fast_lock_guard l(_lock);
 		{
 			std::list<SocketSession*>::iterator iter = _free.begin();
 			for (; iter != _free.end(); ++iter)
@@ -115,7 +112,6 @@ void SessionManager::restoreCache()
 				SocketSession* p = (*iter);
 				delete p;
 			}
-
 			std::list<SocketSession*>().swap(_free);
 		}
 	}

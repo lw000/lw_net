@@ -100,14 +100,24 @@ class NetworkThreadServer : public Threadable {
 private:
 	HttpClient* _client;
 	bool _quit;
+	int _thread_status;
 
 public:
-	NetworkThreadServer(HttpClient* client) : _client(client) {
+	NetworkThreadServer() : _client(nullptr), _quit(false), _thread_status(-1) {
 		_quit = false;
+	}
+
+	NetworkThreadServer(HttpClient* client) : NetworkThreadServer() {
+		this->_client = client;
 	}
 
 	virtual ~NetworkThreadServer() {
 
+	}
+
+public:
+	void setHttpClient(HttpClient* client) {
+		this->_client = client;
 	}
 
 public:
@@ -125,16 +135,18 @@ public:
 		while (!_quit)
 		{		
 			{
-				lw_fast_lock_guard l(&this->_client->_requestMutex);
+				lw_fast_lock_guard l(this->_client->_requestMutex);
 				if (this->_client->_requestQueue.empty())
 				{
-					this->_client->_requestCond.wait(&this->_client->_requestMutex);
+					_thread_status = 1;
+					this->_client->_requestCond.wait(this->_client->_requestMutex);
 				}
 			}
 
 			if (_quit) {
 				{
-					lw_fast_lock_guard l(&this->_client->_requestMutex);
+					lw_fast_lock_guard l(this->_client->_requestMutex);
+					_thread_status = 2;
 					while (!this->_client->_requestQueue.empty())
 					{
 						HttpRequest *request = this->_client->_requestQueue.front();
@@ -147,18 +159,24 @@ public:
 
 			HttpRequest * request = nullptr;
 			{
-				lw_fast_lock_guard l(&this->_client->_requestMutex);
-				request = this->_client->_requestQueue.front();
-				this->_client->_requestQueue.pop();
+				lw_fast_lock_guard l(this->_client->_requestMutex);
+				if (!this->_client->_requestQueue.empty()) {
+					request = this->_client->_requestQueue.front();
+					this->_client->_requestQueue.pop();
+				}
 			}
 			
-			if (request != nullptr) {
-				if (request->cancel == 0) {
-					request->start();
-				}
-				else {
-					SAFE_DELETE(request);
-				}
+			if (request == nullptr) {
+				continue;
+			}
+
+			_thread_status = 3;
+			if (request->cancel == 0) {
+				_thread_status = 4;
+				request->start();
+			}
+			else {
+				SAFE_DELETE(request);
 			}
 		}
 
@@ -185,8 +203,6 @@ HttpRequest::HttpRequest(HttpClient* client) : _client(client) {
 HttpRequest::~HttpRequest() {
 	evhttp_uri_free(this->_host);
 	evhttp_connection_free(this->_evcon);
-
-	LOGD("~HttpRequest");
 }
 
 void HttpRequest::setUrl(const std::string& url) {
@@ -222,6 +238,7 @@ void HttpRequest::start() {
 
 	int c = evhttp_make_request(this->_evcon, req, EVHTTP_REQ_CONNECT, buffer);
 	this->begintime = clock();
+	LOGD("HttpRequest::start");
 }
 
 std::string HttpRequest::debug() {
@@ -251,24 +268,34 @@ std::string HttpReponse::getContent() const {
 	return data;
 }
 
+#define MAX_NETWORK_THREAD_COUNT 2
+
 //////////////////////////////////////////////////////////////////////////////////////////
 HttpClient::HttpClient()
 {
 	this->_processor = new SocketProcessor();
-	this->serverThread = new NetworkThreadServer(this);
+	this->serverThread = new NetworkThreadServer*[MAX_NETWORK_THREAD_COUNT];
+	for (int i = 0; i < MAX_NETWORK_THREAD_COUNT; i++) {
+		this->serverThread[i] = new NetworkThreadServer(this);
+	}
 }
 
 HttpClient::~HttpClient()
 {
-	SAFE_DELETE(this->serverThread);
+	for (int i = 0; i < MAX_NETWORK_THREAD_COUNT; i++) {
+		this->serverThread[i]->quitServer();
+		_requestCond.broadcast();
+		SAFE_DELETE(this->serverThread[i]);
+	}
 	SAFE_DELETE(this->_processor);
 }
 
 bool HttpClient::create() {
-
 	bool r = this->_processor->create(false);
 	if (r) {
-		this->serverThread->start();
+		for (int i = 0; i < MAX_NETWORK_THREAD_COUNT; i++) {
+			this->serverThread[i]->start();
+		}
 	}
 	return r;
 }
@@ -283,9 +310,9 @@ SocketProcessor* HttpClient::getProcessor() const {
 
 void HttpClient::add(HttpRequest* request) {
 	{
-		lw_fast_lock_guard l(&_requestMutex);
+		lw_fast_lock_guard l(_requestMutex);
 		_requestQueue.push(request);
-		_requestCond.signal();
+		_requestCond.broadcast();
 	}
 }
 

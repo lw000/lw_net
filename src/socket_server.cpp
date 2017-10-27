@@ -101,7 +101,7 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 
 			ServerSession* pSession = (ServerSession*)this->listenHandler(this->_processor, fd);
 			
-			pSession->setAutoHeartBeat();
+			pSession->startAutoPing();
 
 			char hostBuf[NI_MAXHOST];
 			char portBuf[64];

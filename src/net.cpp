@@ -18,6 +18,7 @@ static int lw_socket_init()
 		printf("WSAStartup failed with error: %d\n", err);
 		return 0;
 	}
+	printf("WSAStartup success.\n", err);
 #endif
 	return 0;
 }
@@ -26,6 +27,7 @@ static void lw_socket_clean()
 {
 #if defined(WIN32) || defined(_WIN32)
 	WSACleanup();
+	printf("WSACleanup.\n");
 #endif
 }
 

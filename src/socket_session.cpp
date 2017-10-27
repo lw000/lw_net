@@ -175,7 +175,7 @@ void SocketSession::destroy() {
 	this->_event_callback_map.clear();
 }
 
-void SocketSession::setAutoHeartBeat(int tms) {
+void SocketSession::startAutoPing(int tms) {
 	this->_heartbeat->setAutoHeartBeat(tms);
 }
 

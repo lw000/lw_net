@@ -79,7 +79,7 @@ public:
 
 class HttpClient : public Threadable {
 public:
-	NetworkThreadServer* serverThread;
+	NetworkThreadServer** serverThread;
 	SocketProcessor* _processor;
 	std::queue<HttpRequest*> _requestQueue;
 	std::queue<HttpRequest*> _reponseQueue;

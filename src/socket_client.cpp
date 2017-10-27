@@ -39,33 +39,13 @@ bool SocketClient::create(SocketConfig* conf)
 	if (ret) {
 		this->_session = new ClientSession();
 		if (this->_session != nullptr) {
-			
 			int r = this->_session->create(this->_processor, conf);
-
-			this->_session->onConnectedHandler = [this](SocketSession* session) {
-				this->onConnectedHandler(session);
-			};
-
-			this->_session->onDisconnectHandler = [this](SocketSession* session) {
-				this->onDisconnectHandler(session);
-			};
-
-			this->_session->onTimeoutHandler = [this](SocketSession* session){
-				this->onTimeoutHandler(session);
-			};
-
-			this->_session->onErrorHandler = [this](SocketSession* session) {
-				this->onErrorHandler(session);
-			};
-
-			this->_session->onDataParseHandler = [this](SocketSession* session, lw_int32 cmd,
-				lw_char8* buf, lw_int32 bufsize) -> int {
-				int c = this->onDataParseHandler(session, cmd, buf, bufsize);
-				return c;
-			};
-
-			this->start();
-		}	
+			this->_session->onConnectedHandler = this->onConnectedHandler;
+			this->_session->onDisconnectHandler = this->onDisconnectHandler;
+			this->_session->onTimeoutHandler = this->onTimeoutHandler;
+			this->_session->onErrorHandler = this->onErrorHandler;
+			this->_session->onDataParseHandler = this->onDataParseHandler;
+		}
 	}
 
 	return true;
@@ -84,8 +64,8 @@ void SocketClient::destroy()
 	}
 }
 
-void SocketClient::setAutoHeartBeat(int tms) {
-	this->_session->setAutoHeartBeat(tms);
+void SocketClient::startAutoPing(int tms) {
+	this->_session->startAutoPing(tms);
 }
 
 std::string SocketClient::debug()

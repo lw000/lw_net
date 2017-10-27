@@ -19,8 +19,6 @@ class SocketClient : public Object, public Threadable
 {
 public:
 	SocketEventHandler onConnectedHandler;
-
-public:
 	SocketEventHandler onDisconnectHandler;
 	SocketEventHandler onTimeoutHandler;
 	SocketEventHandler onErrorHandler;
@@ -37,7 +35,7 @@ public:
 	void destroy();
 
 public:
-	void setAutoHeartBeat(int tms = 30000);
+	void startAutoPing(int tms = 30000);
 
 public:
 	int close();
