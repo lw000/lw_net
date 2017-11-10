@@ -163,8 +163,13 @@ lw_int32 SocketServer::serv(std::function<void(lw_int32 what)> func)
 	});
 
 	_listener->listenerErrorCB([this](void * userdata, int er) {
-		LOGFMTD("got an error %d (%s) on the listener. shutting down.\n", er, evutil_socket_error_to_string(er));
-		this->_processor->loopexit();
+
+		if (this->listenErrorHandler != nullptr) {
+			this->listenErrorHandler(userdata, er);
+
+// 			LOGFMTD("got an error %d (%s) on the listener. shutting down.\n", er, evutil_socket_error_to_string(er));
+// 			this->_processor->loopexit();
+		}
 	});
 
 	if (this->_onFunc != nullptr)

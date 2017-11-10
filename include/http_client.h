@@ -82,9 +82,7 @@ public:
 	NetworkThreadServer** serverThread;
 	SocketProcessor* _processor;
 	std::queue<HttpRequest*> _requestQueue;
-	std::queue<HttpRequest*> _reponseQueue;
 	lw_fast_mutex _requestMutex;
-	lw_fast_mutex _reponseMutex;
 	lw_fast_cond _requestCond;
 
 public:

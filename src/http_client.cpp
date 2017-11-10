@@ -282,11 +282,7 @@ HttpClient::HttpClient()
 
 HttpClient::~HttpClient()
 {
-	for (int i = 0; i < MAX_NETWORK_THREAD_COUNT; i++) {
-		this->serverThread[i]->quitServer();
-		_requestCond.broadcast();
-		SAFE_DELETE(this->serverThread[i]);
-	}
+	this->destroy();
 	SAFE_DELETE(this->_processor);
 }
 
@@ -301,6 +297,12 @@ bool HttpClient::create() {
 }
 
 void HttpClient::destroy() {
+	for (int i = 0; i < MAX_NETWORK_THREAD_COUNT; i++) {
+		this->serverThread[i]->quitServer();
+		_requestCond.broadcast();
+		SAFE_DELETE(this->serverThread[i]);
+	}
+
 	this->_processor->destroy();
 }
 
@@ -325,15 +327,13 @@ int HttpClient::onStart() {
 }
 
 int HttpClient::onRun() {
-
 	int c = this->_processor->dispatch();
-
+	LOGFMTD("c : %d", c);
 	return 0;
 }
 
 int HttpClient::onEnd()
 {
 	this->destroy();
-
 	return 0;
 }

@@ -24,6 +24,7 @@ class SocketServer : public SocketObject, public Threadable
 {
 public:
 	SocketListenerHandler listenHandler;
+	SocketListenerErrorHandler listenErrorHandler;
 
 public:
 	SocketServer();
