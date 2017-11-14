@@ -1,17 +1,17 @@
 #ifndef __SocketServer_H__
 #define __SocketServer_H__
 
+#include <string>
 #include <vector>
 #include <list>
+#include <functional>
+
 #include <unordered_map>
 #include <event2/util.h>
 #include "socket_object.h"
 #include "socket_hanlder.h"
 #include "socket_timer.h"
-
 #include "Threadable.h"
-
-#include <functional>
 
 class SocketTimer;
 class SocketConfig;

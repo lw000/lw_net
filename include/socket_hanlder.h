@@ -23,6 +23,7 @@ typedef std::function<int (SocketSession* session, lw_int32 cmd, lw_char8* buf, 
 
 #define SOCKET_EVENT_SELECTOR(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, ##__VA_ARGS__)
 #define SOCKET_LISTENER_SELECTOR_2(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, std::placeholders::_2, ##__VA_ARGS__)
+#define SOCKET_LISTENER_ERROR_SELECTOR_2(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, std::placeholders::_2, ##__VA_ARGS__)
 #define SOCKET_DATAPARSE_SELECTOR_4(__selector__,__target__, ...) std::bind(&__selector__, __target__, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, ##__VA_ARGS__)
 
 class SendDataCallback
