@@ -2,10 +2,22 @@
 #define __nanomsgcpp_socket_h__
 
 #include <stddef.h>
-
+#include <functional>
 #include "common_type.h"
 
 class NetIOBuffer;
+
+typedef std::function<int (lw_int32 cmd, lw_char8* buf, lw_int32 bufsize)> NanomsgDataParseHandler;
+
+class AbstractNanomsgcppSocket {
+public:
+		virtual ~AbstractNanomsgcppSocket() {
+
+		}
+
+public:
+
+};
 
 class NanomsgcppSocket
 {
@@ -25,9 +37,10 @@ public:
 	int close();
 
 public:
-	int send(int cmd, void* object, int objectSize);
-	int sendmsg(int cmd, void* object, int objectSize, const struct nn_msghdr *msghdr, int flags);
+	int send(int cmd, void* object, int objectSize, int flags=0);
+	int sendmsg(int cmd, void* object, int objectSize, const struct nn_msghdr *msghdr, int flags=0);
 	int recv();
+	int recv(const NanomsgDataParseHandler& handler);
 	int recvmsg(struct nn_msghdr *msghdr, int flags);
 
 private:
@@ -36,8 +49,19 @@ private:
 protected:
 	int _fd;
 
-private:
+protected:
 	NetIOBuffer* _iobuffer;
+	NanomsgDataParseHandler _handler;
+};
+
+class NanomsgcppSocketServerThread : public NanomsgcppSocket {
+public:
+		NanomsgcppSocketServerThread();
+		virtual ~NanomsgcppSocketServerThread();
+
+public:
+		int recv();
+		int recv(const NanomsgDataParseHandler& handler);
 };
 
 #endif	//__nanomsgcpp_socket_h__
